@@ -1,0 +1,24 @@
+---
+description: BLoC state management patterns and conventions for Flutter
+globs: "**/*_bloc.dart,**/*_event.dart,**/*_state.dart,**/*_view.dart"
+alwaysApply: false
+---
+
+# BLoC Patterns
+
+- Use one BLoC per feature.
+- Use `part`/`part of` split across bloc, event, and state files.
+- Define base event and state as sealed classes.
+- Keep state classes immutable.
+- Include `initial`, `loading`, `success`, and `error` state flow.
+- UI only dispatches events and reacts to state.
+- Keep business and decision logic in BLoC; repositories only fetch/return data.
+- After a repository call returns, BLoC must check `response_type`:
+  - If `response_type` is success: emit success state and do all follow-up logic only in this success branch.
+  - Otherwise: emit error state and do not run success-branch logic.
+- Handle asynchronous failures and emit explicit error states.
+- Use `BlocBuilder` for rendering and `BlocListener` for side effects.
+- Do not use `setState` for flows managed by BLoC.
+- Do not call APIs directly from BLoC.
+- Do not move UI validation logic into BLoC.
+- Do not emit redundant intermediate states.

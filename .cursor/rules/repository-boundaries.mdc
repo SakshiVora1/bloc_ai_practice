@@ -1,0 +1,15 @@
+---
+description: Repository layer boundaries with ApiService-only access
+globs: "lib/**/repositories/**/*.dart,lib/**/repository/**/*.dart,lib/core/services/api_service.dart,**/*_bloc.dart"
+alwaysApply: false
+---
+
+# Repository Layer Boundaries
+
+- Repositories must only call `ApiService` for network access.
+- Repository methods should return raw response/data mapping only.
+- Do not place business logic, decision trees, validation, orchestration, or UI rules in repositories.
+- Do not call `ApiService` directly from BLoC, UI, or widgets.
+- Keep all business/decision logic in BLoC only.
+- If behavior depends on state, user flow, retries, or conditional branching, implement it in BLoC.
+- Do not branch on `response_type` inside repositories; BLoC handles `response_type` and state emission.

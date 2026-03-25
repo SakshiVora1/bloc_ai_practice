@@ -1,0 +1,14 @@
+---
+description: Centralized assets, strings, colors, and fonts
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Images, Strings, Colors, Fonts
+
+- Use `AppImages` for asset paths.
+- Use `AppStrings` for user-facing strings.
+- Use `AppColors` for color values.
+- Use `AppFonts` helpers for text styles.
+- Add missing constants to the centralized constants classes before usage.
+- Do not hardcode asset paths, strings, colors, or inline text styles in UI code.

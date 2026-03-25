@@ -1,0 +1,16 @@
+---
+description: Routing conventions using RouteNames and AppRoutes
+globs: "**/*route_names*.dart,**/*app_routes*.dart,lib/main.dart"
+alwaysApply: false
+---
+
+# Routing Conventions
+
+- Define route path constants only in `RouteNames`.
+- Start every route value with `/`.
+- Keep route constant names in lowerCamelCase.
+- Define route builders only in `AppRoutes.routes`.
+- Use `RouteNames` keys inside `AppRoutes.routes`.
+- Do not define route maps inside view/widget files.
+- In `MaterialApp`, use `initialRoute` and `routes` with centralized route classes.
+- Do not use `home:` when route maps are active.

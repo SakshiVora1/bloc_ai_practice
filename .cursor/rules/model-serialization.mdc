@@ -1,0 +1,26 @@
+---
+description: Dart model JSON serialization rules (null-safe, mirrored)
+globs: "lib/data/models/**/*.dart,lib/screens/**/models/**/*.dart,**/*_model.dart"
+alwaysApply: false
+---
+
+# Model JSON Serialization Rules
+
+- Every model must implement both `fromJson` and `toJson`.
+- `fromJson` and `toJson` must mirror each other exactly (same keys/shape).
+- Use null-safe parsing for all fields.
+- All fields must be nullable unless they are guaranteed by the API/DB contract.
+- No force unwrap (`!`) anywhere in models.
+- Lists must default to `[]` (never `null`) when parsing.
+- Nested objects must be parsed safely (null-check + safe cast + null-aware construction).
+- No business logic in models (no validation, derived values, formatting, or API calls).
+
+## JSON Parsing Patterns (required)
+
+- Prefer safe casts:
+  - `json['x'] as String?`
+  - `(json['xs'] as List?)?.cast<String>() ?? []`
+- Nested objects:
+  - `child: (json['child'] as Map<String, dynamic>?) == null ? null : Child.fromJson(json['child'] as Map<String, dynamic>)`
+- Lists of nested objects default to `[]`:
+  - `children: (json['children'] as List?)?.whereType<Map<String, dynamic>>().map(Child.fromJson).toList() ?? []`

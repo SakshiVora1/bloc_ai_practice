@@ -1,0 +1,14 @@
+---
+description: Environment and URL management — no hardcoded URLs, UrlService as single access point
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Environment & URL Management
+
+- Do not hardcode API or socket URLs.
+- Read environment keys through centralized environment config.
+- Keep environment switching in `AppConfig`.
+- Access runtime URLs through `UrlService` only.
+- Do not call `dotenv` from UI, BLoC, or repository layers.
+- Do not construct base URLs in feature code.

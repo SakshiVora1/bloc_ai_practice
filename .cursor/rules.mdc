@@ -1,0 +1,10 @@
+# Project Rules
+
+Index of active rule files:
+
+- `.cursor/rules/bloc-patterns.mdc`
+- `.cursor/rules/environment-urls.mdc`
+- `.cursor/rules/flutter-assets.mdc`
+- `.cursor/rules/general.mdc`
+- `.cursor/rules/project-structure.mdc`
+- `.cursor/rules/routing-conventions.mdc`
