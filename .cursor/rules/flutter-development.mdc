@@ -1,0 +1,78 @@
+---
+description: Concise Flutter development rules — BLoC, structure, API/error flow, Effective Dart
+globs: |
+  lib/**/*.dart
+  test/**/*.dart
+alwaysApply: true
+---
+
+# Flutter development rules
+
+Use **`flutter_bloc`** as the only state management approach. Align with [Effective Dart](https://dart.dev/effective-dart); naming, imports, and formatting expectations are in this file.
+
+## Feature structure (separation of concerns)
+
+**Preferred:** under `lib/features/{{feature_name}}/`:
+
+| Layer | Location | Responsibility |
+| --- | --- | --- |
+| UI | `presentation/view/`, `presentation/widgets/` | Layout, styling, `BlocProvider`/`BlocBuilder`/`BlocListener`; dispatch **events** only |
+| BLoC | `presentation/bloc/` (+ `part` files for events/states) | **All business and flow logic** |
+| Data | `data/` | Repository implementations, DTOs, API mapping |
+| Domain | `domain/` (optional) | Repository interfaces, pure helpers |
+
+**Alternate layout** (legacy): `lib/screens/{{feature_name}}/` with `view/`, `widgets/`, `bloc/`, `models/`.
+
+**Shared locations:** app-wide widgets → `lib/widgets/`; shared models → `lib/data/models/`; cross-cutting models → `lib/core/models/` when appropriate; routing → `lib/core/routing/` (`route_names.dart`, `app_routes.dart`, `app_router.dart`). Feature-only DTOs live under `lib/features/{{feature}}/data/`.
+
+**Widget baseline:** prefer **`StatelessWidget`** when no local mutable state is needed; use **`StatefulWidget`** only for clear lifecycle or local UI state boundaries.
+
+## Business logic
+
+- **Only in the BLoC**: branching on outcomes, orchestration, when to emit which state, navigation triggers (via listener), API **flow** after data returns.
+- **Not in BLoC**: pure UI validation timing/noise rules stay in widgets when appropriate; repositories do **not** decide success vs failure for the feature (see below).
+- **Not in repositories**: no feature branching, retries policy, toasts, or UI rules (`repository-boundaries.mdc`).
+
+## Naming (Effective Dart)
+
+- **Types** → `UpperCamelCase` (`LoginBloc`, `LoginInitial`).
+- **Members, locals, parameters** → `lowerCamelCase`.
+- **Files and directories** → `snake_case` (`login_bloc.dart`, `login_screen/`).
+- **Events** → imperative or past-tense phrases consistent with the feature (`Submitted`, `Started`).
+- Meaningful names; avoid unclear abbreviations.
+
+## Formatting and practices
+
+- Run **`dart format`** before commit; prefer ~80 character lines where readable.
+- Prefer **`final`**; order imports: `dart:` → `package:` → relative (sorted).
+- Annotate return types on functions; avoid **`dynamic`** on public APIs.
+- Prefer **`isEmpty` / `isNotEmpty`** over raw length checks; use **`async`/`await`**.
+- Do not silence **`analysis_options.yaml` / flutter_lints** broadly.
+
+## API calls, errors, and state
+
+- **Calls**: BLoC → **repository** → **`ApiService` only**. Never call `ApiService` or HTTP from widgets or BLoC directly.
+- **Repository**: map/return API payload; **no** `response_type` branching for feature flow.
+- **After repository returns**: BLoC **must** inspect **`response_type`** — success branch → follow-up logic → **success** state; non-success → **error** state (no success-only side effects on error paths).
+- **User feedback for API errors**: **`AppToast.showError`** (`lib/core/services/app_toast.dart`, **toastification**) from a **`BlocListener`** (needs `BuildContext`) — not `SnackBar`/`ScaffoldMessenger` for this pattern (`bloc-patterns.mdc`).
+- **States**: baseline **`initial`**, **`loading`**, **`success`**, **`error`**; add extra states only when the feature truly needs them. Keep states **immutable**.
+- **UI**: `BlocBuilder` for rebuilds; **`BlocListener`** for toasts, dialogs, navigation.
+
+## Do’s
+
+- Use **`part` / `part of`** (or clear colocation) so bloc, event, and state stay in sync.
+- Use **sealed** base classes for events/states when the project pattern expects it.
+- Inject repositories via **BLoC constructor**; keep **routes thin** (provide BLoC + view only).
+- Handle async failures and emit explicit **error** states.
+- Prefer **`bloc_test`** for event → state unit tests.
+
+## Don’ts
+
+- Don’t use **`setState`** for feature flow managed by BLoC.
+- Don’t put business or **`response_type`** decisions in **repositories** or **widgets**.
+- Don’t call **APIs** from the view.
+- Don’t use **`SnackBar`** for the standard API error feedback pattern (use toast).
+- Don’t emit **redundant** states or rebuild the whole screen without need.
+- Don’t duplicate logic—**reuse** widgets, constants, and patterns across features.
+
+For extended BLoC and repository rules, see `bloc-patterns.mdc` and `repository-boundaries.mdc`.

@@ -10,24 +10,25 @@ import 'api_exceptions.dart';
 class ApiService {
   final Dio _dio;
 
-  ApiService({
-    String? baseUrl,
-    Dio? dio,
-  }) : _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? AppConfig.baseUrl,
-                connectTimeout: const Duration(seconds: 30),
-                receiveTimeout: const Duration(seconds: 30),
-                responseType: ResponseType.json,
-              ),
-            ) {
+  ApiService({String? baseUrl, Dio? dio})
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl ?? AppConfig.baseUrl,
+              connectTimeout: const Duration(seconds: 30),
+              receiveTimeout: const Duration(seconds: 30),
+              responseType: ResponseType.json,
+            ),
+          ) {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onError: (DioException err, ErrorInterceptorHandler handler) {
           // Normalize DioException into our typed ApiException.
           final ApiException apiException = _mapDioError(err);
-          handler.reject(err.copyWith(error: apiException, message: apiException.message));
+          handler.reject(
+            err.copyWith(error: apiException, message: apiException.message),
+          );
         },
       ),
     );
@@ -40,14 +41,9 @@ class ApiService {
     } on DioException catch (e) {
       throw _unwrapApiException(e);
     } on FormatException catch (e) {
-      throw ParseApiException(
-        message: e.message,
-        data: e.source,
-      );
+      throw ParseApiException(message: e.message, data: e.source);
     } catch (e) {
-      throw UnknownApiException(
-        message: e.toString(),
-      );
+      throw UnknownApiException(message: e.toString());
     }
   }
 
@@ -129,22 +125,23 @@ class ApiService {
     );
   }
 
-  Options _mergeOptions(Options? options, {required Map<String, String> headers}) {
+  Options _mergeOptions(
+    Options? options, {
+    required Map<String, String> headers,
+  }) {
     if (options == null) {
       return Options(headers: headers);
     }
 
     // Merge caller headers with required headers (required keys win).
-    final mergedHeaders = <String, dynamic>{
-      ...?options.headers,
-      ...headers,
-    };
+    final mergedHeaders = <String, dynamic>{...?options.headers, ...headers};
 
     return options.copyWith(headers: mergedHeaders);
   }
 
   Future<Map<String, String>> _buildHeaders({String? bearerToken}) async {
-    final Map<String, String> deviceInfo = await DeviceInfoService.getDeviceInfoAsJson();
+    final Map<String, String> deviceInfo =
+        await DeviceInfoService.getDeviceInfoAsJson();
     final String timezone = await _getCurrentTimezone();
 
     final Map<String, String> headers = <String, String>{
@@ -217,20 +214,46 @@ class ApiService {
 
     final int? statusCode = err.response?.statusCode;
     final dynamic responseData = err.response?.data;
-    final String message = _extractMessage(responseData) ?? err.message ?? 'Something went wrong';
+    final String message =
+        _extractMessage(responseData) ?? err.message ?? 'Something went wrong';
 
     // HTTP status mapping.
     switch (statusCode) {
       case 400:
-        return BadRequestApiException(message: message, statusCode: statusCode, data: responseData, dioType: err.type);
+        return BadRequestApiException(
+          message: message,
+          statusCode: statusCode,
+          data: responseData,
+          dioType: err.type,
+        );
       case 401:
-        return UnauthorizedApiException(message: message, statusCode: statusCode, data: responseData, dioType: err.type);
+        return UnauthorizedApiException(
+          message: message,
+          statusCode: statusCode,
+          data: responseData,
+          dioType: err.type,
+        );
       case 403:
-        return ForbiddenApiException(message: message, statusCode: statusCode, data: responseData, dioType: err.type);
+        return ForbiddenApiException(
+          message: message,
+          statusCode: statusCode,
+          data: responseData,
+          dioType: err.type,
+        );
       case 404:
-        return NotFoundApiException(message: message, statusCode: statusCode, data: responseData, dioType: err.type);
+        return NotFoundApiException(
+          message: message,
+          statusCode: statusCode,
+          data: responseData,
+          dioType: err.type,
+        );
       case 409:
-        return ConflictApiException(message: message, statusCode: statusCode, data: responseData, dioType: err.type);
+        return ConflictApiException(
+          message: message,
+          statusCode: statusCode,
+          data: responseData,
+          dioType: err.type,
+        );
       case 422:
         return UnprocessableEntityApiException(
           message: message,
@@ -272,7 +295,8 @@ class ApiService {
     if (data == null) return null;
 
     if (data is Map) {
-      final dynamic message = data['message'] ?? data['error'] ?? data['detail'];
+      final dynamic message =
+          data['message'] ?? data['error'] ?? data['detail'];
       if (message is String && message.trim().isNotEmpty) {
         return message.trim();
       }
@@ -286,4 +310,3 @@ class ApiService {
     return null;
   }
 }
-

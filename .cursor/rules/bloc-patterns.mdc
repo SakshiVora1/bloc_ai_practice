@@ -7,18 +7,77 @@ alwaysApply: false
 # BLoC Patterns
 
 - Use one BLoC per feature.
+- **Do not use `Cubit`.** Use **`Bloc<Event, State>`** with explicit events; Cubit is not part of this project's pattern.
 - Use `part`/`part of` split across bloc, event, and state files.
 - Define base event and state as sealed classes.
-- Keep state classes immutable.
-- Include `initial`, `loading`, `success`, and `error` state flow.
 - UI only dispatches events and reacts to state.
-- Keep business and decision logic in BLoC; repositories only fetch/return data.
-- After a repository call returns, BLoC must check `response_type`:
-  - If `response_type` is success: emit success state and do all follow-up logic only in this success branch.
-  - Otherwise: emit error state and do not run success-branch logic.
-- Handle asynchronous failures and emit explicit error states.
+- Keep business and decision logic in BLoC; repositories only call `ApiService` and return the response (see repository rules).
+- After a repository call returns, BLoC **must** inspect `response_type` from that response:
+  - If **`response_type` is success**: run all applicable follow-up logic **only** in this branch, then **emit a state that represents success** (shape is up to the feature: dedicated subclass, or updated fields + status).
+  - If **`response_type` is error** (or non-success): **emit a state that represents failure** (or attach error data); **do not** run success-branch logic; **do not** leave the UI with no follow-up state after the async work ends.
+- On **error** paths (failed `response_type` or uncaught async failure), surface short user feedback with **`AppToast.showError(context, message)`** (`lib/core/services/app_toast.dart`, **toastification**). Call it from a **`BlocListener`** so a valid **`BuildContext`** is available. **Do not** use `ScaffoldMessenger` / `SnackBar` for this API error feedback pattern.
 - Use `BlocBuilder` for rendering and `BlocListener` for side effects.
-- Do not use `setState` for flows managed by BLoC.
-- Do not call APIs directly from BLoC.
+- Do not use `setState` for flows or business data that belong in BLoC state.
+- Do not call APIs directly from BLoC—use repositories that delegate to `ApiService`.
+- Inject repositories directly through the BLoC constructor (for example: `LoginBloc(loginRepository: LoginRepository())`).
 - Do not move UI validation logic into BLoC.
 - Do not emit redundant intermediate states.
+- Preserve current useful state data when handling UI-only events (for example toggles) so unrelated status is not reset.
+- Avoid unnecessary state emissions because each emit can trigger UI rebuilds; prefer selectors and granular builders/listeners.
+- Prefer **`bloc_test`** for unit-testing event-to-state transitions (including success and error branches).
+- Do not mix unrelated concerns in one BLoC; split by journey/screen when state domains diverge.
+
+## State model (immutable view models)
+
+- Treat states as **immutable view models** for the screen: whatever the UI needs (status, data, messages, flags, etc.).
+- **Do not use `package:equatable` for states** (same idea as events): rely on default **reference equality** unless you **manually** implement `==` / `hashCode` where value equality is truly required.
+- The BLoC owns how domain/API results become state; the **UI only builds from state** and **dispatches events**.
+
+## Async and API-driven flows
+
+- Model async work explicitly in a way that matches the UX: for example distinct sealed states per phase, **or** one state class with a `Status` (or similar) field such as `initial` / `loading` / `success` / `failure` **plus** payload fields. **There is no project requirement** to use four fixed state names or a fixed quartet—pick the smallest shape that stays clear for the feature.
+- Reuse **shared enums** under `lib/core/enums/` (or `lib/core/constants/` when the project already places them there) when the same status concept appears in multiple features.
+- For **lists** and collections: **immutable updates** only—use `copyWith`, spread/new list instances, or new state instances; **do not** mutate lists/maps in place before `emit`.
+- After errors, always **emit a failure-oriented state** or **attach error information** on the current state so listeners/builders can react—never drop the stream without a resolving emission.
+
+## Immutability
+
+- Prefer **immutable** state classes with **`copyWith`** or **new instances** inside the BLoC for business/UI-backed data; avoid parallel mutable "side" fields for the same concerns.
+
+## Practical Rules (apply to all features)
+
+1) **BLoC scope rule**
+- Use BLoC for stateful feature behavior; do not use `setState` for feature flow.
+
+2) **Rebuild rule**
+- Use `BlocBuilder` only where state is consumed.
+- Do not rebuild the whole screen unless truly necessary.
+
+3) **Side-effect rule**
+- Use `BlocListener` for navigation, toasts, dialogs, and other side effects only.
+
+4) **State design rule**
+- Design states around **real transitions** and what the UI must show, not around a mandatory `initial` / `loading` / `success` / `error` checklist.
+- Add or split states only when the journey needs them.
+
+5) **UI-only interaction rule**
+- UI toggles (visibility, tabs, expand/collapse) must not pollute API lifecycle transitions.
+
+6) **Validation rule**
+- Validate on action trigger (for example submit/login tap).
+- Avoid real-time noisy validation unless explicitly required by UX.
+
+7) **API flow rule**
+- Call repository from BLoC, inspect `response_type`, and branch success/error explicitly.
+
+8) **Layer boundary rule**
+- Repository: API call + response mapping only.
+- BLoC: decision and flow logic.
+- View: render UI and dispatch events.
+- Route: thin wiring only.
+
+9) **Consistency rule**
+- Reuse existing components/constants/styles before creating new ones.
+
+10) **Performance rule**
+- Emit only meaningful states; avoid redundant emissions.

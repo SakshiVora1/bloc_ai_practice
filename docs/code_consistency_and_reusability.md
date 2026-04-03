@@ -10,17 +10,17 @@ Keep the codebase consistent, highly reusable, and free from duplication by:
 
 ### Images / SVG / Lottie
 - Never hardcode asset paths like `assets/images/image.svg` directly inside widgets.
-- Always declare asset paths once in `lib/core/constants/app_images.dart` (class: `AppImages`) as `static const String`.
+- Always declare asset paths once in `lib/core/constants/app_assets.dart` (class: `AppAssets`) as `static const String`.
 - Reuse existing constants; if the constant doesn’t exist yet, add it and reuse it everywhere.
 
 Example (usage in UI):
 ```dart
-SvgPicture.asset(AppImages.subqdocsWhite);
+SvgPicture.asset(AppAssets.subqdocsWhite);
 ```
 
 Example (constant declaration):
 ```dart
-class AppImages {
+class AppAssets {
   static const String subqdocsWhite = 'assets/images/subqdocs_white.svg';
 }
 ```
@@ -101,14 +101,14 @@ Notes:
 - Avoid putting duplicated logic inside multiple widgets; extract shared logic into blocs, services, or reusable widgets based on usage scope.
 
 ## 6) Naming & Maintenance Rules
-- Always use consistent naming: `AppImages`, `AppStrings`, `AppColors`, `AppFonts`.
+- Always use consistent naming: `AppAssets`, `AppStrings`, `AppColors`, `AppFonts`.
 - Reuse existing constants/widgets/models before creating new ones.
 - When duplication is found, extract the common part and replace usages across the project.
 
 ---
 ## Quick “Do / Don’t” Summary
 Do:
-- Use `AppImages`, `AppStrings`, `AppColors`, `AppFonts` from `lib/core/constants/`
+- Use `AppAssets`, `AppStrings`, `AppColors`, `AppFonts` from `lib/core/constants/`
 - Put global models in `lib/data/models/`
 - Put global widgets in `lib/widgets/`
 Don’t:

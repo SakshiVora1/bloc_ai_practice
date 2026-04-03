@@ -3,4 +3,3 @@ abstract final class AppPreferencesKeys {
 
   static const String loginResponse = 'login_response';
 }
-

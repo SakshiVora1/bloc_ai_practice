@@ -66,7 +66,7 @@ Don't ->
 -----
 
 Images, Strings, Colors and Fonts
-- Always use AppImages, AppStrings, AppColors, and AppFonts.
+- Always use AppAssets, AppStrings, AppColors, and AppFonts.
 - If any asset, string, or color is NOT available:
   First create a static const variable inside its respective class
   Then use it in the code
@@ -91,13 +91,14 @@ lib/
 ├── core/
 │   ├── constants/
 │   │   ├── app_colors.dart
-│   │   ├── app_images.dart
+│   │   ├── app_assets.dart
 │   │   ├── app_fonts.dart
 │   │   ├── app_strings.dart
 │   │   └── app_enum.dart
 │   │
-│   ├── routes/
+│   ├── routing/
 │   │   ├── app_routes.dart
+│   │   ├── app_router.dart
 │   │   └── route_names.dart
 │   │
 │   ├── services/

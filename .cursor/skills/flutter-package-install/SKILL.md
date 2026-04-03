@@ -24,4 +24,4 @@ Run this to install/fetch the new dependencies.
 ## Workflow
 
 1. `flutter pub add <package_name>`
-2. `flutter pub get`_
+2. `flutter pub get`

@@ -6,9 +6,23 @@ alwaysApply: false
 
 # Environment & URL Management
 
+## Core Rules
+
 - Do not hardcode API or socket URLs.
 - Read environment keys through centralized environment config.
 - Keep environment switching in `AppConfig`.
 - Access runtime URLs through `UrlService` only.
 - Do not call `dotenv` from UI, BLoC, or repository layers.
 - Do not construct base URLs in feature code.
+
+## Layer Boundaries
+
+- Environment configuration belongs in **`lib/core/config/`** (e.g. `AppConfig`, `Environment`, `UrlService`).
+- Only **`ApiService`** and **`UrlService`** / **`AppConfig`** should access environment values directly from feature code; prefer **`UrlService`** for URLs.
+- Repositories receive configured clients—they don't read environment variables.
+
+## Don'ts
+
+- **Don't** hardcode URLs in widgets, blocs, or repositories.
+- **Don't** scatter environment reads across the codebase.
+- **Don't** log secrets (tokens, API keys, PII) in development or production.

@@ -29,11 +29,10 @@
 | Path | Action |
 |------|--------|
 | `lib/screens/splash_screen/bloc/` | **Use** — bloc scaffold already exists; extend events/states/handlers |
-| `lib/screens/splash_screen/bloc/splash_screen_bloc.dart` (+ `splash_screen_event.dart`, `splash_screen_state.dart` as **part** files) | **Use** — follow **part / part of** layout per `bloc-patterns.md` and `flutter-bloc-feature` skill |
 | `lib/screens/splash_screen/view/splash_screen_view.dart` | **Create** |
 | `lib/core/routes/route_names.dart` | **Create** — per `routing_conventions.md` |
 | `lib/core/routes/app_routes.dart` | **Create** |
-| `lib/screens/login/view/login_view.dart` (+ `bloc/` when login BLoC is added, per feature skill) | **Create** — login screen must exist for navigation target (minimal placeholder acceptable for this milestone); use **snake_case** filenames per `general.md` |
+| `lib/screens/login/` (bloc/view as per feature skill) | **Create** — login screen must exist for navigation target (minimal placeholder acceptable for this milestone) |
 | `lib/core/constants/app_colors.dart` | **Use** — add splash background color constant |
 | `lib/core/constants/app_images.dart` | **Use** — add SVG asset path constant |
 | `lib/main.dart` | **Update** — `initialRoute`, `routes`, remove default `home` demo |
@@ -46,15 +45,11 @@
 
 **Bloc:** `SplashScreenBloc` (`lib/screens/splash_screen/bloc/`)
 
-**File structure:** Bloc uses **part / part of** — main file `splash_screen_bloc.dart` with `part 'splash_screen_event.dart';` and `part 'splash_screen_state.dart';` event/state files as `part of 'splash_screen_bloc.dart';` (per `bloc-patterns.md` and `flutter-bloc-feature`).
-
 | Piece | Responsibility |
 |-------|----------------|
 | **Events** | e.g. `SplashScreenStarted` — fired when the splash view is first shown (from `initState` / post-frame callback or similar) |
 | **States** | `SplashScreenInitial` (show UI), optionally `SplashScreenNavigating` if you want to block double-navigation; avoid unnecessary states if a single listener-driven navigation is enough |
 | **Bloc role** | Start a **2-second** delayed action when started; on completion emit a state that means “go to login” (e.g. `SplashScreenReadyForLogin`) — **no API/repository** for this feature |
-
-**State checklist (loading / success / error):** The feature skill and `bloc-patterns.md` normally expect `initial`, `loading`, `success`, and `error` for data-driven flows. **This feature does not use that quartet** because there is no API, repository, or other I/O that can fail in a way that maps to a dedicated error screen state; the only async work is a fixed timer, and cancellation / double-start are handled under [Edge Cases](#11-edge-cases), not as generic `error` emissions. **No separate `loading` state** is required: the splash UI is static from frame one until navigation.
 
 **Navigation:** Use `BlocListener` in `splash_screen_view.dart` to call `Navigator.pushReplacementNamed` (or equivalent) when the “ready for login” state is emitted — keeps navigation out of the bloc body per side-effect conventions.
 
@@ -68,8 +63,6 @@
 |----------|-----------------|
 | `RouteNames.splashScreen` | `"/splashScreen"` |
 | `RouteNames.login` | `"/login"` |
-
-Declare route strings on `RouteNames` as **`static final`** (or equivalent) with values starting with `/` and **lowerCamelCase** names, matching `routing_conventions.md`.
 
 **Flow:** `splashScreen` → (after 2s) → `login`
 
@@ -149,10 +142,8 @@ If login later needs tokens or config, that remains in login/auth repositories �
 - **No hardcoding in UI:** Colors and asset paths via `AppColors` / `AppImages`.
 - **Folder placement:** Splash under `lib/screens/splash_screen/` with `view/` and `bloc/`.
 - **BLoC:** Side effects (navigation) via `BlocListener`, not inside `build`.
-- **BLoC files:** part / part of trio (`splash_screen_bloc.dart`, `_event.dart`, `_state.dart`); see [§4](#4-bloc-strategy).
 - **Routing:** Only `RouteNames` + `AppRoutes` + `main.dart` per `routing_conventions.md`.
 - **No API in bloc:** Timer-only coordination.
-- **Standard state quartet:** Deviation from default `loading` / `success` / `error` is **documented in §4** (timer-only, no I/O failure path).
 - **Equatable:** Not used (per project rules).
 
 ---
@@ -170,7 +161,7 @@ If login later needs tokens or config, that remains in login/auth repositories �
 | Area | Impact |
 |------|--------|
 | **Rules** | No new rules; existing `bloc-patterns`, `flutter-assets`, `project-structure`, `routing_conventions` apply |
-| **Skills** | `flutter-bloc-feature`, `flutter-app-constants`, `flutter-project-structure` are the primary references during implementation |
+| **Skills** | Use **`.cursor/rules/`** (`flutter-development`, `flutter-assets`, `bloc-patterns`); optional **`flutter-package-install`** etc. only if needed |
 | **Lint scope** | New/edited files under `lib/screens/splash_screen/`, `lib/core/routes/`, `lib/core/constants/`, `lib/main.dart` |
 
 ---

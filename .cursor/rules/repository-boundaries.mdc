@@ -6,10 +6,38 @@ alwaysApply: false
 
 # Repository Layer Boundaries
 
-- Repositories must only call `ApiService` for network access.
-- Repository methods should return raw response/data mapping only.
+## Where Calls Live
+
+- **Data layer**: `ApiService`, DTOs, and repository implementations perform HTTP and parsing.
+- **Bloc**: Calls **repositories** or domain services—**not** raw `http` from widgets or from unrelated singletons.
+
+## Repository Rules
+
+- When implementing a repository, **only** use `ApiService` to perform HTTP/API calls. Do not use other clients, raw `http`, or duplicate request stacks in repositories.
+- Repository methods **return the API response** (or a direct mapping of that response into models). They do not interpret business outcome flags for the UI flow.
+- Map low-level exceptions in repositories to **typed failures** or `Result`-style returns so Bloc stays testable.
 - Do not place business logic, decision trees, validation, orchestration, or UI rules in repositories.
-- Do not call `ApiService` directly from BLoC, UI, or widgets.
-- Keep all business/decision logic in BLoC only.
-- If behavior depends on state, user flow, retries, or conditional branching, implement it in BLoC.
-- Do not branch on `response_type` inside repositories; BLoC handles `response_type` and state emission.
+- Do not call `ApiService` directly from BLoC, UI, or widgets—always go through a repository.
+- Keep all branching on **`response_type`** (success vs error) and follow-up logic in **BLoC** only.
+- Do not branch on `response_type` inside repositories; BLoC handles `response_type`, state emission, and user feedback triggers.
+- Repository methods must do only this sequence: call API via `ApiService` and return the response/model mapping.
+- Do not add fallback flow, retries, navigation decisions, toasts, validation rules, or any feature business branching in repositories.
+- Repositories should be injected directly into the BLoC constructor; avoid creating repository-dependent logic in routes.
+
+## Error Handling Flow
+
+1. Repository catches transport/parsing errors; converts to domain-level error (e.g., `NetworkFailure`, `UnauthorizedFailure`) or returns `Failure` / `Either`.
+2. Bloc `on<Event>` uses `try/catch` only around repository calls if repositories throw; prefer explicit result types to avoid double patterns.
+3. Emit a **dedicated failure state** or attach `errorMessage` / optional failure to an existing state—never leave the UI stuck with no emitted state after an error. Map final user copy via **`AppStrings`** in the UI when possible, or emit a code that the UI maps to `AppStrings`.
+4. User-facing API errors: use **`AppToast`** from a **`BlocListener`**, not `SnackBar`. Use `BlocObserver` in development to log transitions; never log secrets (tokens, PII).
+
+## Do's
+
+- **Do** inject dependencies (repositories, clients) into Blocs via constructor—testable and explicit.
+- **Do** keep repositories thin: fetch/persist and return typed results—**no** widget or navigation awareness.
+
+## Don'ts
+
+- **Don't** swallow errors silently in repositories or blocs.
+- **Don't** put `BuildContext` or theme data inside Bloc; don't scatter raw user-facing strings—use **`AppStrings`** from the UI layer.
+- **Don't** use global singletons for ad-hoc state; route data through Bloc or repository injection.

@@ -8,7 +8,7 @@ import 'environment.dart';
 /// automatically resolves to the right value — no manual changes needed.
 ///
 /// ```dart
-/// await AppConfig.init(environment: Environment.dev);
+/// await AppConfig.init(env: Environment.dev);
 /// ```
 class AppConfig {
   AppConfig._();
@@ -24,11 +24,30 @@ class AppConfig {
   ///
   /// Must be called before `runApp`.
   static Future<void> init({
-    Environment env = Environment.dev,
+    Environment? env,
     String envFileName = '.env',
   }) async {
     await dotenv.load(fileName: envFileName);
-    environment = env;
+    environment = env ?? _environmentFromDotEnv();
+  }
+
+  static Environment _environmentFromDotEnv() {
+    final String rawEnv = dotenv
+        .get('ENV', fallback: 'dev')
+        .trim()
+        .toLowerCase();
+    switch (rawEnv) {
+      case 'dev':
+        return Environment.dev;
+      case 'ngrok':
+        return Environment.ngrok;
+      case 'stage':
+        return Environment.stage;
+      case 'prod':
+        return Environment.prod;
+      default:
+        return Environment.dev;
+    }
   }
 
   // ────────────────────── API URLs ───────────────────────────────

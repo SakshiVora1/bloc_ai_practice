@@ -1,10 +1,12 @@
 ---
 description: Dart model JSON serialization rules (null-safe, mirrored)
-globs: "lib/data/models/**/*.dart,lib/screens/**/models/**/*.dart,**/*_model.dart"
+globs: "lib/data/models/**/*.dart,lib/screens/**/models/**/*.dart,lib/features/**/data/**/*.dart,**/*_model.dart"
 alwaysApply: false
 ---
 
 # Model JSON Serialization Rules
+
+## Core Rules
 
 - Every model must implement both `fromJson` and `toJson`.
 - `fromJson` and `toJson` must mirror each other exactly (same keys/shape).
@@ -24,3 +26,15 @@ alwaysApply: false
   - `child: (json['child'] as Map<String, dynamic>?) == null ? null : Child.fromJson(json['child'] as Map<String, dynamic>)`
 - Lists of nested objects default to `[]`:
   - `children: (json['children'] as List?)?.whereType<Map<String, dynamic>>().map(Child.fromJson).toList() ?? []`
+
+## Model Placement
+
+- Place app-wide models in `lib/data/models/`.
+- Place feature-only models in `lib/features/{{feature_name}}/data/` or `lib/screens/{{feature_name}}/models/`.
+- DTOs (Data Transfer Objects) belong in the data layer, not in domain or presentation.
+
+## Immutability
+
+- Prefer **immutable** model classes with `final` fields.
+- Implement `copyWith` for models that need to be updated.
+- Do not mutate model instances directly.

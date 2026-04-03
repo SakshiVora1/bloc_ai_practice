@@ -1,10 +1,14 @@
 # Project Rules
 
-Index of active rule files:
+Index of active rule files (each file exists under `.cursor/rules/`):
 
 - `.cursor/rules/bloc-patterns.mdc`
 - `.cursor/rules/environment-urls.mdc`
 - `.cursor/rules/flutter-assets.mdc`
+- `.cursor/rules/flutter-development.mdc`
 - `.cursor/rules/general.mdc`
-- `.cursor/rules/project-structure.mdc`
+- `.cursor/rules/model-serialization.mdc`
+- `.cursor/rules/repository-boundaries.mdc`
 - `.cursor/rules/routing-conventions.mdc`
+
+Naming, style, and Effective Dart practices are covered in **`flutter-development.mdc`** (and the [Effective Dart](https://dart.dev/effective-dart) guide); there is no separate `effective-dart.mdc`.

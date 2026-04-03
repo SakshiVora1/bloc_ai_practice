@@ -1,19 +1,11 @@
 ---
 description: General coding rules for consistency and reuse
-globs: |
-  lib/**/*.dart
-  test/**/*.dart
 alwaysApply: true
 ---
 
 # General Rules
 
-- Avoid duplication.
-- Prefer reuse before creating new components.
-- Keep naming consistent and meaningful.
-- Use `snake_case` for file names.
-- Prefer `MediaQuery` for sizing; use `LayoutBuilder` only when parent constraints are required.
-- Do not duplicate logic across files; reuse existing implementations.
-- Prefer concise BLoC providers in routes/widgets:
-  - Use `BlocProvider(create: (_) => MyBloc(), child: MyView())` when no extra setup is needed.
-  - Same idea for `MultiBlocProvider`: each entry should usually be `BlocProvider(create: (_) => MyBloc())` (avoid verbose `create` blocks unless required).
+- Avoid duplication at all costs
+- Prefer reuse over creation
+- Keep naming consistent and meaningful
+- Use `snake_case` for all files

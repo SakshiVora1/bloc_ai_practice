@@ -1,16 +1,54 @@
 ---
-description: Routing conventions using RouteNames and AppRoutes
+description: Routing conventions — RouteNames paths, AppRoutes.routes builders, AppRouter
 globs: "**/*route_names*.dart,**/*app_routes*.dart,lib/main.dart"
 alwaysApply: false
 ---
 
 # Routing Conventions
 
-- Define route path constants only in `RouteNames`.
+Paths live in **`lib/core/routing/route_names.dart`** (`RouteNames`). The map of builders lives in **`lib/core/routing/app_routes.dart`** (`AppRoutes.routes`). Imperative navigation uses **`AppRouter`** when the project provides it.
+
+## Route Definition
+
+- Define route **path string** constants in **`RouteNames`** only.
 - Start every route value with `/`.
-- Keep route constant names in lowerCamelCase.
-- Define route builders only in `AppRoutes.routes`.
-- Use `RouteNames` keys inside `AppRoutes.routes`.
+- Keep constant names in **`lowerCamelCase`**.
+
+```dart
+abstract final class RouteNames {
+  RouteNames._();
+  static const String home = '/home';
+  static const String login = '/login';
+}
+```
+
+## Route Builder Rules
+
+- Define **`Map<String, WidgetBuilder>`** only in **`AppRoutes.routes`**, keyed by **`RouteNames.*`**.
 - Do not define route maps inside view/widget files.
-- In `MaterialApp`, use `initialRoute` and `routes` with centralized route classes.
+- In `MaterialApp`, use `initialRoute` and `routes` (or the app’s established router setup).
 - Do not use `home:` when route maps are active.
+
+## BlocProvider in Routes
+
+- Keep route entries minimal: only wrap the feature view with the matching `BlocProvider`.
+- Do not create UI widgets, API calls, business logic, post-frame callbacks, or conditional logic inside route builders.
+- Preferred pattern: `BlocProvider(create: (_) => FeatureBloc(), child: FeatureView())` (or concise constructor injection only).
+
+```dart
+// Preferred route builder pattern
+RouteNames.login: (context) => BlocProvider(
+  create: (_) => LoginScreenBloc(loginRepository: LoginRepositoryImpl()),
+  child: const LoginScreenView(),
+),
+```
+
+## Navigation Side Effects
+
+- Navigation, toasts, dialogs: prefer **`BlocListener`** for one-shot reactions (e.g., success → navigate with **`RouteNames`** / **`AppRouter`**).
+- Avoid calling `Navigator` inside the Bloc.
+
+## Don'ts
+
+- **Don't** hard-code route strings in `Navigator.pushNamed` without **`RouteNames`**.
+- **Don't** put navigation logic in Bloc—use `BlocListener` in UI layer.

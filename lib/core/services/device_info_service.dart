@@ -8,16 +8,31 @@ class DeviceInfoService {
 
     if (Platform.isAndroid) {
       AndroidDeviceInfo android = await deviceInfoPlugin.androidInfo;
-      return {'os_type': 'Android', 'brand': android.brand, 'model': android.model, 'os_version': android.version.release};
+      return {
+        'os_type': 'Android',
+        'brand': android.brand,
+        'model': android.model,
+        'os_version': android.version.release,
+      };
     } else if (Platform.isIOS) {
       IosDeviceInfo ios = await deviceInfoPlugin.iosInfo;
       final identifier = ios.utsname.machine;
       final model = getiOSModelName(identifier);
 
-      return {'os_type': 'iOS', 'brand': 'Apple', 'model': model, 'os_version': ios.systemVersion};
+      return {
+        'os_type': 'iOS',
+        'brand': 'Apple',
+        'model': model,
+        'os_version': ios.systemVersion,
+      };
     }
 
-    return {'os_type': 'Unknown', 'brand': 'Unknown', 'model': 'Unknown', 'os_version': 'Unknown'};
+    return {
+      'os_type': 'Unknown',
+      'brand': 'Unknown',
+      'model': 'Unknown',
+      'os_version': 'Unknown',
+    };
   }
 
   static String getiOSModelName(String identifier) {

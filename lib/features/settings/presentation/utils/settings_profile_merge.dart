@@ -1,0 +1,133 @@
+import 'package:subqdocs_bloc/data/models/login_model.dart';
+
+/// Normalizes phone to 10 digits (US) for [User.contactNo], or empty string.
+String settingsNormalizeContactSave(String maskedOrRaw) {
+  final String d = maskedOrRaw.replaceAll(RegExp(r'\D'), '');
+  if (d.isEmpty) {
+    return '';
+  }
+  if (d.length == 11 && d.startsWith('1')) {
+    return d.substring(1);
+  }
+  if (d.length == 10) {
+    return d;
+  }
+  return d;
+}
+
+/// Formats stored contact for the `+1 (###) ###-####` mask initial value.
+String settingsFormatPhoneMaskInitial(String? raw) {
+  if (raw == null || raw.trim().isEmpty) {
+    return '';
+  }
+  final String d = raw.replaceAll(RegExp(r'\D'), '');
+  if (d.isEmpty) {
+    return '';
+  }
+  final String ten = d.length == 11 && d.startsWith('1')
+      ? d.substring(1)
+      : (d.length >= 10 ? d.substring(d.length - 10) : '');
+  if (ten.length != 10) {
+    return raw.trim();
+  }
+  return '+1 (${ten.substring(0, 3)}) ${ten.substring(3, 6)}-${ten.substring(6)}';
+}
+
+String? _emptyToNull(String? s) {
+  final String t = s?.trim() ?? '';
+  return t.isEmpty ? null : t;
+}
+
+/// Returns a new [User] with profile form fields applied; other fields copied
+/// from [base].
+User mergeUserFromProfileForm(
+  User base, {
+  required String firstName,
+  required String lastName,
+  required String email,
+  required String contactNormalized,
+  required bool isDoctor,
+  String? title,
+  String? degree,
+  String? medicalLicenseNumber,
+  DateTime? licenseExpiry,
+  String? nationalProviderIdentifier,
+  String? taxonomyCode,
+  String? specialization,
+}) {
+  final dynamic licenseValue = !isDoctor
+      ? base.licenseExpiryDate
+      : (licenseExpiry == null
+            ? base.licenseExpiryDate
+            : '${licenseExpiry.year.toString().padLeft(4, '0')}-'
+                  '${licenseExpiry.month.toString().padLeft(2, '0')}-'
+                  '${licenseExpiry.day.toString().padLeft(2, '0')}');
+
+  return User(
+    thirdPartyId: base.thirdPartyId,
+    id: base.id,
+    email: email,
+    firstName: firstName,
+    lastName: lastName,
+    token: base.token,
+    organizationId: base.organizationId,
+    secret2Fa: base.secret2Fa,
+    profileImage: base.profileImage,
+    degree: isDoctor ? _emptyToNull(degree) : base.degree,
+    otp: base.otp,
+    pin: base.pin,
+    otpToken: base.otpToken,
+    otpGeneratedAt: base.otpGeneratedAt,
+    lastLoginDate: base.lastLoginDate,
+    hasAcceptedTerms: base.hasAcceptedTerms,
+    updateInTerms: base.updateInTerms,
+    termsUpdatedAt: base.termsUpdatedAt,
+    isAdmin: base.isAdmin,
+    role: base.role,
+    status: base.status,
+    contactNo: contactNormalized.isEmpty ? null : contactNormalized,
+    country: base.country,
+    state: base.state,
+    stateCode: base.stateCode,
+    city: base.city,
+    streetName: base.streetName,
+    postalCode: base.postalCode,
+    title: isDoctor ? _emptyToNull(title) : base.title,
+    medicalLicenseNumber: isDoctor
+        ? _emptyToNull(medicalLicenseNumber)
+        : base.medicalLicenseNumber,
+    licenseExpiryDate: licenseValue,
+    nationalProviderIdentifier: isDoctor
+        ? _emptyToNull(nationalProviderIdentifier)
+        : base.nationalProviderIdentifier,
+    taxonomyCode: isDoctor ? _emptyToNull(taxonomyCode) : base.taxonomyCode,
+    specialization: isDoctor
+        ? _emptyToNull(specialization)
+        : base.specialization,
+    uploadedAt: base.uploadedAt,
+    invitationToken: base.invitationToken,
+    suspended: base.suspended,
+    secondaryEmail: base.secondaryEmail,
+    dataSource: base.dataSource,
+    thirdPartySyncDate: base.thirdPartySyncDate,
+    thirdPartyLastUpdated: base.thirdPartyLastUpdated,
+    optumObjectId: base.optumObjectId,
+    optumUsername: base.optumUsername,
+    optumPassword: base.optumPassword,
+    optumDae: base.optumDae,
+    optumNpi: base.optumNpi,
+    optumUpin: base.optumUpin,
+    optumCanRefill: base.optumCanRefill,
+    isMultiLanguagePreference: base.isMultiLanguagePreference,
+    isHidden: base.isHidden,
+    isUnsubscribed: base.isUnsubscribed,
+    guidedTour: base.guidedTour,
+    createdAt: base.createdAt,
+    updatedAt: base.updatedAt,
+    deletedAt: base.deletedAt,
+    officeLocationIds: base.officeLocationIds,
+    officeLocations: base.officeLocations,
+    organizationName: base.organizationName,
+    subscriptionPeriod: base.subscriptionPeriod,
+  );
+}
