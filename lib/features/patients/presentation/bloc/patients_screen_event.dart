@@ -1,6 +1,5 @@
 part of 'patients_screen_bloc.dart';
 
-@immutable
 sealed class PatientsScreenEvent {
   const PatientsScreenEvent();
 }
@@ -9,34 +8,36 @@ final class PatientsScreenStarted extends PatientsScreenEvent {
   const PatientsScreenStarted();
 }
 
-final class PatientsSearchInputChanged extends PatientsScreenEvent {
-  const PatientsSearchInputChanged(this.text);
+final class PatientsSearchQueryChanged extends PatientsScreenEvent {
+  const PatientsSearchQueryChanged(this.query);
 
-  final String text;
+  final String query;
 }
 
-final class PatientsSearchDebouncedFetch extends PatientsScreenEvent {
-  const PatientsSearchDebouncedFetch();
+final class PatientsSearchDebounced extends PatientsScreenEvent {
+  const PatientsSearchDebounced(this.query);
+
+  final String query;
 }
 
-final class PatientsSearchClearRequested extends PatientsScreenEvent {
-  const PatientsSearchClearRequested();
+final class PatientsSearchCleared extends PatientsScreenEvent {
+  const PatientsSearchCleared();
 }
 
-final class PatientsSortColumnTapped extends PatientsScreenEvent {
-  const PatientsSortColumnTapped(this.column);
+final class PatientsSortColumnPressed extends PatientsScreenEvent {
+  const PatientsSortColumnPressed(this.column);
 
   final PatientSortColumn column;
 }
 
-final class PatientsPreviousPageTapped extends PatientsScreenEvent {
-  const PatientsPreviousPageTapped();
+final class PatientsLoadMoreRequested extends PatientsScreenEvent {
+  const PatientsLoadMoreRequested();
 }
 
-final class PatientsNextPageTapped extends PatientsScreenEvent {
-  const PatientsNextPageTapped();
+final class PatientsRetryRequested extends PatientsScreenEvent {
+  const PatientsRetryRequested();
 }
 
-final class PatientsApiErrorToastConsumed extends PatientsScreenEvent {
-  const PatientsApiErrorToastConsumed();
+final class PatientsLoadMoreErrorConsumed extends PatientsScreenEvent {
+  const PatientsLoadMoreErrorConsumed();
 }

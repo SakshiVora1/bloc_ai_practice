@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
-import 'package:subqdocs_bloc/features/patients/presentation/bloc/patients_screen_bloc.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_primary_common_button.dart';
 
 class PatientsLoadFailureBody extends StatelessWidget {
-  const PatientsLoadFailureBody({required this.message, super.key});
+  const PatientsLoadFailureBody({
+    required this.message,
+    required this.onRetry,
+    super.key,
+  });
 
   final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
               message,
@@ -24,19 +28,9 @@ class PatientsLoadFailureBody extends StatelessWidget {
               style: AppFonts.regular(14, AppColors.blueGray),
             ),
             const SizedBox(height: 16),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.drawerItemSelected,
-                foregroundColor: AppColors.white,
-                minimumSize: const Size(120, 40),
-              ),
-              onPressed: () => context.read<PatientsScreenBloc>().add(
-                const PatientsScreenStarted(),
-              ),
-              child: Text(
-                AppStrings.patientsRetry,
-                style: AppFonts.medium(14, AppColors.white),
-              ),
+            PatientsPrimaryCommonButton(
+              label: AppStrings.patientsRetry,
+              onPressed: onRetry,
             ),
           ],
         ),

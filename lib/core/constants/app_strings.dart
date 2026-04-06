@@ -125,18 +125,24 @@ abstract final class AppStrings {
       'Medical record for patient $patientId is not available yet.';
 
   static const String patientsScreenTitle = 'Patients';
-  static const String patientsSearchHint = 'Search patients';
-  static const String patientsColPatientName = 'Patient';
+  static const String patientsSearchHint = 'Search';
+  static const String patientsColPatientName = 'Patient Name';
   static const String patientsColGender = 'Gender';
   static const String patientsColAge = 'Age';
-  static const String patientsColLastVisit = 'Last visit';
-  static const String patientsColPreviousVisits = 'Prior visits';
-  static const String patientsColAction = 'Actions';
-  static const String patientsActionMedicalRecord = 'Medical record';
+  static const String patientsColLastVisit = 'Last Visit Date';
+  static const String patientsColPreviousVisits = 'Previous Visits';
+  static const String patientsColAction = 'Action';
+  static const String patientsNotAvailable = 'N/A';
+  static const String patientsEmptyTitle = 'Your Patient List is Empty';
+  static const String patientsEmptyDescription =
+      'Start by adding your first patient to manage appointments, view '
+      'medical history, and keep track of visits-all in one place';
+  static const String patientsRecordNow = 'Record now';
+  static const String patientsActionMedicalRecord = 'Medical Record';
   static const String patientsActionSchedule = 'Schedule';
-  static const String patientsActionStartVisit = 'Start visit';
-  static const String patientsActionEditPatient = 'Edit patient';
-  static const String patientsAddPatient = 'Add patient';
+  static const String patientsActionStartVisit = 'Start Visit';
+  static const String patientsActionEditPatient = 'Edit Patient';
+  static const String patientsAddPatient = 'Add Patient';
   static const String patientsAddPatientComingSoon =
       'Add patient is not available yet.';
   static const String patientsEditPatientComingSoon =
@@ -200,7 +206,7 @@ abstract final class AppStrings {
   static const String settingsProfileSaved = 'Profile saved';
   static const String settingsLoadUserFailure =
       'Unable to load your profile. Please try again.';
-  static const String settingsLogoutButton = 'Log out';
+  static const String settingsLogoutButton = 'Logout';
   static const String settingsDeleteAccountButton = 'Delete account';
   static const String settingsDeleteNotImplemented =
       'Account deletion is not available in this build.';

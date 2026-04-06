@@ -1,270 +1,311 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/core/services/api_exceptions.dart';
 import 'package:subqdocs_bloc/features/patients/data/patient_list_row.dart';
+import 'package:subqdocs_bloc/features/patients/data/patients_list_api_envelope.dart';
 import 'package:subqdocs_bloc/features/patients/domain/patient_sort_column.dart';
 import 'package:subqdocs_bloc/features/patients/domain/repositories/patients_repository.dart';
 
 part 'patients_screen_event.dart';
-
 part 'patients_screen_state.dart';
 
-class PatientsScreenBloc
+final class PatientsScreenBloc
     extends Bloc<PatientsScreenEvent, PatientsScreenState> {
   PatientsScreenBloc({required PatientsRepository patientsRepository})
     : _patientsRepository = patientsRepository,
       super(const PatientsScreenInitial()) {
     on<PatientsScreenStarted>(_onStarted);
-    on<PatientsSearchInputChanged>(_onSearchInputChanged);
-    on<PatientsSearchDebouncedFetch>(_onSearchDebouncedFetch);
-    on<PatientsSearchClearRequested>(_onSearchClearRequested);
-    on<PatientsSortColumnTapped>(_onSortColumnTapped);
-    on<PatientsPreviousPageTapped>(_onPreviousPage);
-    on<PatientsNextPageTapped>(_onNextPage);
-    on<PatientsApiErrorToastConsumed>(_onApiErrorConsumed);
+    on<PatientsSearchQueryChanged>(_onSearchQueryChanged);
+    on<PatientsSearchDebounced>(_onSearchDebounced);
+    on<PatientsSearchCleared>(_onSearchCleared);
+    on<PatientsSortColumnPressed>(_onSortColumnPressed);
+    on<PatientsLoadMoreRequested>(_onLoadMoreRequested);
+    on<PatientsRetryRequested>(_onRetryRequested);
+    on<PatientsLoadMoreErrorConsumed>(_onLoadMoreErrorConsumed);
   }
 
-  static const Duration _searchDebounceDuration = Duration(milliseconds: 450);
+  static const int _defaultLimit = 80;
+  static const Duration _searchDebounce = Duration(milliseconds: 400);
 
   final PatientsRepository _patientsRepository;
-  Timer? _searchDebounce;
+  Timer? _searchDebounceTimer;
 
   @override
   Future<void> close() {
-    _searchDebounce?.cancel();
+    _searchDebounceTimer?.cancel();
     return super.close();
+  }
+
+  bool _isSuccessResponse(String? responseType) {
+    final String? type = responseType?.toLowerCase().trim();
+    return type == 'success';
+  }
+
+  /// Non-null [PatientsListPageData] only when the envelope is a list success.
+  PatientsListPageData? _pageDataIfListSuccess(
+    PatientsListApiEnvelope envelope,
+  ) {
+    if (!_isSuccessResponse(envelope.responseType) ||
+        envelope.responseData == null) {
+      return null;
+    }
+    return envelope.responseData;
+  }
+
+  String _userVisibleFailureMessage(String? primary) {
+    final String t = primary?.trim() ?? '';
+    return t.isNotEmpty ? t : AppStrings.patientsListGenericFailure;
+  }
+
+  PatientsScreenReady? _readyOrNull(PatientsScreenState s) {
+    return s is PatientsScreenReady ? s : null;
   }
 
   Future<void> _onStarted(
     PatientsScreenStarted event,
     Emitter<PatientsScreenState> emit,
   ) async {
-    const PatientsScreenReady loading = PatientsScreenReady(
-      rows: <PatientListRow>[],
-      page: 1,
-      limit: PatientsScreenReady.defaultLimit,
-      totalCount: 0,
-      totalPage: 1,
+    await _fetchPageOne(
+      emit,
       searchQuery: '',
-      activeSortColumn: null,
+      sortColumn: null,
       sortDescending: false,
-      isListLoading: true,
     );
-    emit(loading);
-    await _reload(emit, loading);
   }
 
-  void _onSearchInputChanged(
-    PatientsSearchInputChanged event,
+  void _onSearchQueryChanged(
+    PatientsSearchQueryChanged event,
     Emitter<PatientsScreenState> emit,
   ) {
-    final PatientsScreenState current = state;
-    if (current is! PatientsScreenReady) {
-      return;
-    }
-    emit(current.copyWith(searchQuery: event.text));
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(_searchDebounceDuration, () {
-      if (!isClosed) {
-        add(const PatientsSearchDebouncedFetch());
+    _searchDebounceTimer?.cancel();
+    _searchDebounceTimer = Timer(_searchDebounce, () {
+      if (isClosed) {
+        return;
       }
+      add(PatientsSearchDebounced(event.query));
     });
   }
 
-  Future<void> _onSearchDebouncedFetch(
-    PatientsSearchDebouncedFetch event,
+  Future<void> _onSearchDebounced(
+    PatientsSearchDebounced event,
     Emitter<PatientsScreenState> emit,
   ) async {
-    final PatientsScreenState current = state;
-    if (current is! PatientsScreenReady) {
-      return;
-    }
-    final PatientsScreenReady loading = current.copyWith(
-      page: 1,
-      isListLoading: true,
+    final PatientsScreenReady? cur = _readyOrNull(state);
+    await _fetchPageOne(
+      emit,
+      searchQuery: event.query,
+      sortColumn: cur?.activeSortColumn,
+      sortDescending: cur?.sortDescending ?? false,
     );
-    emit(loading);
-    await _reload(emit, loading);
   }
 
-  Future<void> _onSearchClearRequested(
-    PatientsSearchClearRequested event,
+  Future<void> _onSearchCleared(
+    PatientsSearchCleared event,
     Emitter<PatientsScreenState> emit,
   ) async {
-    _searchDebounce?.cancel();
-    final PatientsScreenState current = state;
-    if (current is! PatientsScreenReady) {
-      return;
-    }
-    final PatientsScreenReady loading = current.copyWith(
+    _searchDebounceTimer?.cancel();
+    final PatientsScreenReady? cur = _readyOrNull(state);
+    await _fetchPageOne(
+      emit,
       searchQuery: '',
-      page: 1,
-      isListLoading: true,
-      clearLastApiError: true,
+      sortColumn: cur?.activeSortColumn,
+      sortDescending: cur?.sortDescending ?? false,
     );
-    emit(loading);
-    await _reload(emit, loading);
   }
 
-  Future<void> _onSortColumnTapped(
-    PatientsSortColumnTapped event,
+  Future<void> _onSortColumnPressed(
+    PatientsSortColumnPressed event,
     Emitter<PatientsScreenState> emit,
   ) async {
-    final PatientsScreenState current = state;
-    if (current is! PatientsScreenReady) {
-      return;
-    }
+    final PatientsScreenReady? cur = _readyOrNull(state);
+    final PatientSortColumn? prevCol = cur?.activeSortColumn;
+    final bool prevDesc = cur?.sortDescending ?? false;
     final PatientSortColumn column = event.column;
-    final PatientSortColumn? prev = current.activeSortColumn;
-    final bool nextDesc;
-    final PatientSortColumn nextCol;
-    if (prev == column) {
-      nextCol = column;
-      nextDesc = !current.sortDescending;
-    } else {
-      nextCol = column;
-      nextDesc = false;
-    }
-    final PatientsScreenReady loading = current.copyWith(
-      activeSortColumn: nextCol,
+    final bool nextDesc = prevCol == column ? !prevDesc : false;
+
+    await _fetchPageOne(
+      emit,
+      searchQuery: cur?.searchQuery ?? '',
+      sortColumn: column,
       sortDescending: nextDesc,
-      page: 1,
-      isListLoading: true,
-      clearLastApiError: true,
     );
-    emit(loading);
-    await _reload(emit, loading);
   }
 
-  Future<void> _onPreviousPage(
-    PatientsPreviousPageTapped event,
+  Future<void> _onRetryRequested(
+    PatientsRetryRequested event,
     Emitter<PatientsScreenState> emit,
   ) async {
-    final PatientsScreenState current = state;
-    if (current is! PatientsScreenReady) {
-      return;
-    }
-    if (current.page <= 1) {
-      return;
-    }
-    final PatientsScreenReady loading = current.copyWith(
-      page: current.page - 1,
-      isListLoading: true,
-      clearLastApiError: true,
+    final PatientsScreenReady? cur = _readyOrNull(state);
+    await _fetchPageOne(
+      emit,
+      searchQuery: cur?.searchQuery ?? '',
+      sortColumn: cur?.activeSortColumn,
+      sortDescending: cur?.sortDescending ?? false,
     );
-    emit(loading);
-    await _reload(emit, loading);
   }
 
-  Future<void> _onNextPage(
-    PatientsNextPageTapped event,
-    Emitter<PatientsScreenState> emit,
-  ) async {
-    final PatientsScreenState current = state;
-    if (current is! PatientsScreenReady) {
-      return;
-    }
-    if (current.page >= current.totalPage) {
-      return;
-    }
-    final PatientsScreenReady loading = current.copyWith(
-      page: current.page + 1,
-      isListLoading: true,
-      clearLastApiError: true,
+  Future<void> _fetchPageOne(
+    Emitter<PatientsScreenState> emit, {
+    required String searchQuery,
+    required PatientSortColumn? sortColumn,
+    required bool sortDescending,
+  }) async {
+    final PatientsScreenReady? cur = _readyOrNull(state);
+    final List<PatientListRow> existingRows =
+        cur?.rows ?? const <PatientListRow>[];
+
+    emit(
+      PatientsScreenReady(
+        rows: existingRows,
+        page: cur?.page ?? 1,
+        totalPage: cur?.totalPage ?? 1,
+        totalCount: cur?.totalCount ?? 0,
+        limit: cur?.limit ?? _defaultLimit,
+        searchQuery: searchQuery,
+        activeSortColumn: sortColumn,
+        sortDescending: sortDescending,
+        isPageOneLoading: true,
+        isLoadingMore: false,
+        loadMoreErrorMessage: null,
+      ),
     );
-    emit(loading);
-    await _reload(emit, loading);
-  }
 
-  void _onApiErrorConsumed(
-    PatientsApiErrorToastConsumed event,
-    Emitter<PatientsScreenState> emit,
-  ) {
-    final PatientsScreenState current = state;
-    if (current is! PatientsScreenReady) {
-      return;
-    }
-    if (current.lastApiError == null) {
-      return;
-    }
-    emit(current.copyWith(clearLastApiError: true));
-  }
+    final List<Map<String, dynamic>> sorting =
+        PatientsScreenReady.sortingPayloadFor(sortColumn, sortDescending);
 
-  List<Map<String, dynamic>> _sortingPayload(PatientsScreenReady s) {
-    final PatientSortColumn? col = s.activeSortColumn;
-    if (col == null) {
-      return <Map<String, dynamic>>[];
-    }
-    return <Map<String, dynamic>>[
-      <String, dynamic>{'id': col.apiSortId, 'desc': s.sortDescending},
-    ];
-  }
-
-  Future<void> _reload(
-    Emitter<PatientsScreenState> emit,
-    PatientsScreenReady snapshot,
-  ) async {
     try {
-      final PatientsListPageResult result = await _patientsRepository
-          .fetchPatientsPage(
-            page: snapshot.page,
-            limit: snapshot.limit,
-            search: snapshot.searchQuery.trim().isEmpty
-                ? null
-                : snapshot.searchQuery.trim(),
-            sorting: _sortingPayload(snapshot),
+      final PatientsListApiEnvelope envelope = await _patientsRepository
+          .fetchPatients(
+            page: 1,
+            limit: _defaultLimit,
+            search: searchQuery,
+            sorting: sorting,
           );
       if (isClosed) {
         return;
       }
-      final bool ok = (result.responseType ?? '').toLowerCase() == 'success';
-      if (!ok) {
+      final PatientsListPageData? d = _pageDataIfListSuccess(envelope);
+      if (d != null) {
         emit(
-          snapshot.copyWith(
-            isListLoading: false,
-            lastApiError:
-                (result.message != null && result.message!.trim().isNotEmpty)
-                ? result.message!.trim()
-                : AppStrings.patientsListGenericFailure,
+          PatientsScreenReady(
+            rows: d.rows,
+            page: d.page,
+            totalPage: d.totalPage,
+            totalCount: d.totalCount,
+            limit: d.limit,
+            searchQuery: searchQuery,
+            activeSortColumn: sortColumn,
+            sortDescending: sortDescending,
+            isPageOneLoading: false,
+            isLoadingMore: false,
+            loadMoreErrorMessage: null,
           ),
         );
         return;
       }
-
       emit(
-        snapshot.copyWith(
-          rows: result.rows,
-          page: result.page,
-          limit: result.limit,
-          totalCount: result.totalCount,
-          totalPage: result.totalPage <= 0 ? 1 : result.totalPage,
-          isListLoading: false,
-          clearLastApiError: true,
+        PatientsScreenLoadFailed(
+          message: _userVisibleFailureMessage(envelope.message),
         ),
       );
     } on ApiException catch (e) {
       if (isClosed) {
         return;
       }
-      final bool hadRows = snapshot.rows.isNotEmpty;
-      if (!hadRows && snapshot.page == 1) {
-        emit(PatientsScreenFailure(message: e.message));
+      emit(
+        PatientsScreenLoadFailed(
+          message: _userVisibleFailureMessage(e.message),
+        ),
+      );
+    } catch (_) {
+      if (isClosed) {
         return;
       }
-      emit(snapshot.copyWith(isListLoading: false, lastApiError: e.message));
-    } catch (e) {
+      emit(PatientsScreenLoadFailed(message: _userVisibleFailureMessage(null)));
+    }
+  }
+
+  Future<void> _onLoadMoreRequested(
+    PatientsLoadMoreRequested event,
+    Emitter<PatientsScreenState> emit,
+  ) async {
+    final PatientsScreenReady? cur = _readyOrNull(state);
+    if (cur == null ||
+        cur.isPageOneLoading ||
+        cur.isLoadingMore ||
+        !cur.hasMore) {
+      return;
+    }
+
+    emit(cur.copyWith(isLoadingMore: true, clearLoadMoreError: true));
+
+    final int nextPage = cur.page + 1;
+
+    try {
+      final PatientsListApiEnvelope envelope = await _patientsRepository
+          .fetchPatients(
+            page: nextPage,
+            limit: cur.limit,
+            search: cur.searchQuery,
+            sorting: cur.sortingPayload,
+          );
+      if (isClosed) {
+        return;
+      }
+      final PatientsListPageData? d = _pageDataIfListSuccess(envelope);
+      if (d != null) {
+        emit(
+          cur.copyWith(
+            rows: <PatientListRow>[...cur.rows, ...d.rows],
+            page: d.page,
+            totalPage: d.totalPage,
+            totalCount: d.totalCount,
+            limit: d.limit,
+            isLoadingMore: false,
+            clearLoadMoreError: true,
+          ),
+        );
+        return;
+      }
+      emit(
+        cur.copyWith(
+          isLoadingMore: false,
+          loadMoreErrorMessage: _userVisibleFailureMessage(envelope.message),
+        ),
+      );
+    } on ApiException catch (e) {
       if (isClosed) {
         return;
       }
       emit(
-        snapshot.copyWith(
-          isListLoading: false,
-          lastApiError: AppStrings.patientsListGenericFailure,
+        cur.copyWith(
+          isLoadingMore: false,
+          loadMoreErrorMessage: _userVisibleFailureMessage(e.message),
+        ),
+      );
+    } catch (_) {
+      if (isClosed) {
+        return;
+      }
+      emit(
+        cur.copyWith(
+          isLoadingMore: false,
+          loadMoreErrorMessage: _userVisibleFailureMessage(null),
         ),
       );
     }
+  }
+
+  void _onLoadMoreErrorConsumed(
+    PatientsLoadMoreErrorConsumed event,
+    Emitter<PatientsScreenState> emit,
+  ) {
+    final PatientsScreenReady? cur = _readyOrNull(state);
+    if (cur == null) {
+      return;
+    }
+    emit(cur.copyWith(clearLoadMoreError: true));
   }
 }

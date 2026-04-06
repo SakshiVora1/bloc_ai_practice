@@ -2,47 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
-import 'package:subqdocs_bloc/core/services/app_toast.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_header_add_patient_control.dart';
 import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_search_bar.dart';
 
 class PatientsPageHeaderRow extends StatelessWidget {
-  const PatientsPageHeaderRow({super.key});
+  const PatientsPageHeaderRow({
+    required this.searchController,
+    required this.onSearchChanged,
+    required this.onSearchClear,
+    required this.onAddPatient,
+    super.key,
+  });
+
+  final TextEditingController searchController;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onSearchClear;
+  final VoidCallback onAddPatient;
+
+  static final TextStyle _titleStyle = AppFonts.medium(16, AppColors.black);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          Text(
-            AppStrings.patientsScreenTitle,
-            style: AppFonts.medium(18, AppColors.primaryText),
-          ),
-          const Spacer(),
-          const PatientsSearchBar(),
-          const SizedBox(width: 12),
-          SizedBox(
-            height: 40,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.drawerItemSelected,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-              onPressed: () => AppToast.showInfo(
-                context,
-                AppStrings.patientsAddPatientComingSoon,
-              ),
-              child: Text(
-                AppStrings.patientsAddPatient,
-                style: AppFonts.medium(14, AppColors.white),
-              ),
+          Expanded(
+            child: Text(
+              AppStrings.patientsScreenTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _titleStyle,
             ),
           ),
+          PatientsSearchBar(
+            controller: searchController,
+            onChanged: onSearchChanged,
+            onClear: onSearchClear,
+          ),
+          const SizedBox(width: 8),
+          PatientsHeaderAddPatientControl(onPressed: onAddPatient),
         ],
       ),
     );

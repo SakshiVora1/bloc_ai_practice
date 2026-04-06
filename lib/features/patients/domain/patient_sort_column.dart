@@ -1,4 +1,4 @@
-/// Sortable columns for [patient/getAllPatients] `sorting` query (`id` values).
+/// Sortable columns for [patient/getAllPatients] `sorting` query (maps to API `id`).
 enum PatientSortColumn {
   patientName('first_name'),
   age('age'),

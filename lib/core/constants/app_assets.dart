@@ -17,6 +17,7 @@ abstract final class AppAssets {
   static const String settingsDrawer = 'assets/images/settings_drawer.svg';
   static const String quickStart = 'assets/images/quick_start.svg';
   static const String calendarWhite = 'assets/images/calendar_white.svg';
+  static const String whitePlus = 'assets/images/white_plus.svg';
   static const String filterLogo = 'assets/images/filter_logo.svg';
   static const String logoDrawer = 'assets/images/logo_drawer.svg';
   static const String subqdocsLogoAppbar =

@@ -1,189 +1,125 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:subqdocs_bloc/core/constants/app_colors.dart';
-import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
-import 'package:subqdocs_bloc/core/constants/app_strings.dart';
-import 'package:subqdocs_bloc/core/routing/app_router.dart';
-import 'package:subqdocs_bloc/core/services/app_toast.dart';
 import 'package:subqdocs_bloc/features/patients/data/patient_list_row.dart';
 import 'package:subqdocs_bloc/features/patients/domain/patients_row_menu_action.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patient_cell_formatters.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_action_menu_button.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_patient_name_cell.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_table_cell_style.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_table_metrics.dart';
 
 class PatientsTableDataRow extends StatelessWidget {
-  const PatientsTableDataRow({required this.row, super.key});
+  const PatientsTableDataRow({
+    required this.row,
+    required this.onNameTap,
+    required this.onMenuAction,
+    super.key,
+  });
 
   final PatientListRow row;
+  final VoidCallback onNameTap;
+  final ValueChanged<PatientsRowMenuAction> onMenuAction;
 
   @override
   Widget build(BuildContext context) {
-    final TextStyle cellStyle = AppFonts.regular(14, AppColors.blueGray);
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.homeSectionDivider, width: 1),
+    final TextStyle cellStyle = PatientsTableCellStyle.body;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        Expanded(
+          flex: PatientsTableMetrics.flexPatientName,
+          child: InkWell(
+            onTap: onNameTap,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: PatientsPatientNameCell(row: row),
+            ),
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Expanded(flex: 36, child: _PatientNameTapCell(row: row)),
-            Expanded(flex: 10, child: Text(row.ageDisplay, style: cellStyle)),
-            Expanded(
-              flex: 10,
-              child: Text(row.genderInitial, style: cellStyle),
-            ),
-            Expanded(
-              flex: 14,
-              child: Text(
-                row.lastVisitDisplay,
-                style: cellStyle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Expanded(
-              flex: 12,
-              child: Text('${row.previousVisitsCount}', style: cellStyle),
-            ),
-            Expanded(
-              flex: 10,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: PopupMenuButton<PatientsRowMenuAction>(
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: AppColors.blueGray,
-                    size: 22,
-                  ),
-                  padding: EdgeInsets.zero,
-                  onSelected: (PatientsRowMenuAction value) {
-                    switch (value) {
-                      case PatientsRowMenuAction.startVisit:
-                        AppToast.showInfo(
-                          context,
-                          AppStrings.patientsStartVisitComingSoon,
-                        );
-                      case PatientsRowMenuAction.medicalRecord:
-                        AppRouter.pushMedicalRecord(context, patientId: row.id);
-                      case PatientsRowMenuAction.schedule:
-                        AppToast.showInfo(
-                          context,
-                          AppStrings.patientsScheduleComingSoon,
-                        );
-                      case PatientsRowMenuAction.editPatient:
-                        AppToast.showInfo(
-                          context,
-                          AppStrings.patientsEditPatientComingSoon,
-                        );
-                    }
-                  },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<PatientsRowMenuAction>>[
-                        PopupMenuItem<PatientsRowMenuAction>(
-                          value: PatientsRowMenuAction.startVisit,
-                          child: Text(
-                            AppStrings.patientsActionStartVisit,
-                            style: cellStyle,
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem<PatientsRowMenuAction>(
-                          value: PatientsRowMenuAction.medicalRecord,
-                          child: Text(
-                            AppStrings.patientsActionMedicalRecord,
-                            style: cellStyle,
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem<PatientsRowMenuAction>(
-                          value: PatientsRowMenuAction.schedule,
-                          child: Text(
-                            AppStrings.patientsActionSchedule,
-                            style: cellStyle,
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem<PatientsRowMenuAction>(
-                          value: PatientsRowMenuAction.editPatient,
-                          child: Text(
-                            AppStrings.patientsActionEditPatient,
-                            style: cellStyle,
-                          ),
-                        ),
-                      ],
-                ),
-              ),
-            ),
-          ],
+        Expanded(
+          flex: PatientsTableMetrics.flexAge,
+          child: _CenteredCell(
+            text: PatientCellFormatters.ageOrNa(row.age),
+            style: cellStyle,
+            padding: PatientsTableMetrics.dataAgeColumnPadding,
+          ),
         ),
-      ),
+        Expanded(
+          flex: PatientsTableMetrics.flexGender,
+          child: _CenteredCell(
+            text: PatientCellFormatters.genderInitial(row.genderRaw),
+            style: cellStyle,
+            padding: PatientsTableMetrics.dataCompactColumnPadding,
+          ),
+        ),
+        Expanded(
+          flex: PatientsTableMetrics.flexLastVisit,
+          child: _CenteredCell(
+            text: PatientCellFormatters.lastVisitOrNa(row.lastVisitDate),
+            style: cellStyle,
+            padding: PatientsTableMetrics.dataCompactColumnPadding,
+            scaleToFit: true,
+          ),
+        ),
+        Expanded(
+          flex: PatientsTableMetrics.flexPreviousVisits,
+          child: _CenteredCell(
+            text: '${row.previousVisitCount}',
+            style: cellStyle,
+            padding: PatientsTableMetrics.dataCompactColumnPadding,
+          ),
+        ),
+        Expanded(
+          flex: PatientsTableMetrics.flexAction,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              right: PatientsTableMetrics.actionTrailingInset,
+            ),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: PatientsActionMenuButton(onSelected: onMenuAction),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _PatientNameTapCell extends StatelessWidget {
-  const _PatientNameTapCell({required this.row});
+class _CenteredCell extends StatelessWidget {
+  const _CenteredCell({
+    required this.text,
+    required this.style,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+    this.scaleToFit = false,
+  });
 
-  final PatientListRow row;
+  final String text;
+  final TextStyle style;
+  final EdgeInsets padding;
+  final bool scaleToFit;
 
   @override
   Widget build(BuildContext context) {
-    final String? url = row.profileImageUrl;
-    final Widget avatar = url != null && url.isNotEmpty
-        ? ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: url,
-              width: 30,
-              height: 30,
-              fit: BoxFit.cover,
-              errorWidget: (BuildContext context, String _, Object __) =>
-                  _InitialsAvatar(initials: row.initials),
-            ),
-          )
-        : _InitialsAvatar(initials: row.initials);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => AppRouter.pushMedicalRecord(context, patientId: row.id),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            avatar,
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                row.fullName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppFonts.regular(14, AppColors.blueGray),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final Text textWidget = Text(
+      text,
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      softWrap: false,
+      overflow: scaleToFit ? TextOverflow.visible : TextOverflow.ellipsis,
+      style: style,
     );
-  }
-}
 
-class _InitialsAvatar extends StatelessWidget {
-  const _InitialsAvatar({required this.initials});
-
-  final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.homeSectionDivider,
-        shape: BoxShape.circle,
+    return Padding(
+      padding: padding,
+      child: Center(
+        child: scaleToFit
+            ? FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: textWidget,
+              )
+            : textWidget,
       ),
-      child: Text(initials, style: AppFonts.medium(11, AppColors.blueGray)),
     );
   }
 }

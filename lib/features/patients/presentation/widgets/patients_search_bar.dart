@@ -1,100 +1,81 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
-import 'package:subqdocs_bloc/features/patients/presentation/bloc/patients_screen_bloc.dart';
 
-class PatientsSearchBar extends StatefulWidget {
-  const PatientsSearchBar({super.key});
+class PatientsSearchBar extends StatelessWidget {
+  const PatientsSearchBar({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+    super.key,
+  });
 
-  @override
-  State<PatientsSearchBar> createState() => _PatientsSearchBarState();
-}
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
 
-class _PatientsSearchBarState extends State<PatientsSearchBar> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  static const double _width = 180;
+  static const double _height = 40;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PatientsScreenBloc, PatientsScreenState>(
-      buildWhen: (PatientsScreenState previous, PatientsScreenState current) {
-        return previous is PatientsScreenReady &&
-            current is PatientsScreenReady &&
-            previous.searchQuery != current.searchQuery;
-      },
-      builder: (BuildContext context, PatientsScreenState state) {
-        if (state is PatientsScreenReady) {
-          if (state.searchQuery != _controller.text) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) {
-                return;
-              }
-              _controller.value = TextEditingValue(
-                text: state.searchQuery,
-                selection: TextSelection.collapsed(
-                  offset: state.searchQuery.length,
-                ),
-              );
-            });
-          }
-        }
-        final bool showClear = _controller.text.trim().isNotEmpty;
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (BuildContext context, Widget? child) {
+        final bool showClear = controller.text.isNotEmpty;
         return SizedBox(
-          width: 180,
-          height: 40,
+          width: _width,
+          height: _height,
           child: TextField(
-            controller: _controller,
-            onChanged: (String value) {
-              setState(() {});
-              context.read<PatientsScreenBloc>().add(
-                PatientsSearchInputChanged(value),
-              );
-            },
-            style: AppFonts.regular(14, AppColors.primaryText),
+            controller: controller,
+            onChanged: onChanged,
             textInputAction: TextInputAction.search,
+            style: AppFonts.regular(14, AppColors.primaryText),
+            textAlignVertical: TextAlignVertical.center,
             decoration: InputDecoration(
               hintText: AppStrings.patientsSearchHint,
-              hintStyle: AppFonts.regular(14, AppColors.secondaryText),
-              filled: true,
-              fillColor: AppColors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
+              hintStyle: AppFonts.regular(14, AppColors.blueGray),
+              isDense: true,
+              contentPadding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 10,
+                bottom: 10,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: const BorderSide(color: AppColors.textFieldBorder),
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: AppColors.blueGray,
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: const BorderSide(color: AppColors.textFieldBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: const BorderSide(
-                  color: AppColors.drawerItemSelected,
-                ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: _height,
               ),
               suffixIcon: showClear
                   ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: onClear,
+                      icon: const Icon(Icons.close, size: 18),
                       color: AppColors.blueGray,
-                      onPressed: () {
-                        _controller.clear();
-                        setState(() {});
-                        context.read<PatientsScreenBloc>().add(
-                          const PatientsSearchClearRequested(),
-                        );
-                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: _height,
+                      ),
                     )
                   : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.textFieldBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.textFieldBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.primaryAction),
+              ),
             ),
           ),
         );

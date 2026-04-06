@@ -1,118 +1,109 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/features/patients/domain/patient_sort_column.dart';
-import 'package:subqdocs_bloc/features/patients/presentation/bloc/patients_screen_bloc.dart';
-import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_sortable_table_header_cell.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_sortable_header_cell.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/widgets/patients_table_metrics.dart';
 
 class PatientsTableHeaderRow extends StatelessWidget {
-  const PatientsTableHeaderRow({super.key});
+  const PatientsTableHeaderRow({
+    required this.activeSortColumn,
+    required this.sortDescending,
+    required this.onSortPressed,
+    super.key,
+  });
+
+  final PatientSortColumn? activeSortColumn;
+  final bool sortDescending;
+  final ValueChanged<PatientSortColumn> onSortPressed;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PatientsScreenBloc, PatientsScreenState>(
-      buildWhen: (PatientsScreenState previous, PatientsScreenState current) {
-        if (previous is! PatientsScreenReady ||
-            current is! PatientsScreenReady) {
-          return true;
-        }
-        return previous.activeSortColumn != current.activeSortColumn ||
-            previous.sortDescending != current.sortDescending;
-      },
-      builder: (BuildContext context, PatientsScreenState state) {
-        final PatientsScreenReady? ready = state is PatientsScreenReady
-            ? state
-            : null;
-        final PatientSortColumn? active = ready?.activeSortColumn;
-        final bool desc = ready?.sortDescending ?? false;
+    Widget sortableHeader({
+      required int flex,
+      required String label,
+      required PatientSortColumn column,
+      required TextAlign textAlign,
+      required EdgeInsetsGeometry padding,
+    }) {
+      return Expanded(
+        flex: flex,
+        child: PatientsSortableHeaderCell(
+          label: label,
+          column: column,
+          textAlign: textAlign,
+          padding: padding,
+          onPressed: () => onSortPressed(column),
+          isActive: activeSortColumn == column,
+          descending: sortDescending,
+        ),
+      );
+    }
 
-        void sort(PatientSortColumn column) {
-          context.read<PatientsScreenBloc>().add(
-            PatientsSortColumnTapped(column),
-          );
-        }
-
-        return DecoratedBox(
-          decoration: const BoxDecoration(
-            color: AppColors.patientsTableHeaderBackground,
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: AppColors.patientsTableHeaderBar),
+      child: Row(
+        children: <Widget>[
+          sortableHeader(
+            flex: PatientsTableMetrics.flexPatientName,
+            label: AppStrings.patientsColPatientName,
+            column: PatientSortColumn.patientName,
+            textAlign: TextAlign.start,
+            padding: PatientsTableMetrics.headerNamePadding,
           ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Expanded(
-                  flex: 36,
-                  child: PatientsSortableTableHeaderCell(
-                    label: AppStrings.patientsColPatientName,
-                    column: PatientSortColumn.patientName,
-                    isActive: active == PatientSortColumn.patientName,
-                    descending: desc,
-                    onTap: () => sort(PatientSortColumn.patientName),
+          sortableHeader(
+            flex: PatientsTableMetrics.flexAge,
+            label: AppStrings.patientsColAge,
+            column: PatientSortColumn.age,
+            textAlign: TextAlign.center,
+            padding: PatientsTableMetrics.headerAgeColumnPadding,
+          ),
+          sortableHeader(
+            flex: PatientsTableMetrics.flexGender,
+            label: AppStrings.patientsColGender,
+            column: PatientSortColumn.gender,
+            textAlign: TextAlign.center,
+            padding: PatientsTableMetrics.headerCompactColumnPadding,
+          ),
+          sortableHeader(
+            flex: PatientsTableMetrics.flexLastVisit,
+            label: AppStrings.patientsColLastVisit,
+            column: PatientSortColumn.lastVisitDate,
+            textAlign: TextAlign.center,
+            padding: PatientsTableMetrics.headerCompactColumnPadding,
+          ),
+          sortableHeader(
+            flex: PatientsTableMetrics.flexPreviousVisits,
+            label: AppStrings.patientsColPreviousVisits,
+            column: PatientSortColumn.previousVisits,
+            textAlign: TextAlign.center,
+            padding: PatientsTableMetrics.headerCompactColumnPadding,
+          ),
+          Expanded(
+            flex: PatientsTableMetrics.flexAction,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                right: PatientsTableMetrics.actionTrailingInset,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    AppStrings.patientsColAction,
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppFonts.regular(14, AppColors.black),
                   ),
                 ),
-                Expanded(
-                  flex: 10,
-                  child: PatientsSortableTableHeaderCell(
-                    label: AppStrings.patientsColAge,
-                    column: PatientSortColumn.age,
-                    isActive: active == PatientSortColumn.age,
-                    descending: desc,
-                    onTap: () => sort(PatientSortColumn.age),
-                  ),
-                ),
-                Expanded(
-                  flex: 10,
-                  child: PatientsSortableTableHeaderCell(
-                    label: AppStrings.patientsColGender,
-                    column: PatientSortColumn.gender,
-                    isActive: active == PatientSortColumn.gender,
-                    descending: desc,
-                    onTap: () => sort(PatientSortColumn.gender),
-                  ),
-                ),
-                Expanded(
-                  flex: 14,
-                  child: PatientsSortableTableHeaderCell(
-                    label: AppStrings.patientsColLastVisit,
-                    column: PatientSortColumn.lastVisitDate,
-                    isActive: active == PatientSortColumn.lastVisitDate,
-                    descending: desc,
-                    onTap: () => sort(PatientSortColumn.lastVisitDate),
-                  ),
-                ),
-                Expanded(
-                  flex: 12,
-                  child: PatientsSortableTableHeaderCell(
-                    label: AppStrings.patientsColPreviousVisits,
-                    column: PatientSortColumn.previousVisits,
-                    isActive: active == PatientSortColumn.previousVisits,
-                    descending: desc,
-                    onTap: () => sort(PatientSortColumn.previousVisits),
-                  ),
-                ),
-                Expanded(
-                  flex: 10,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 8,
-                    ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        AppStrings.patientsColAction,
-                        style: AppFonts.regular(14, AppColors.black),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

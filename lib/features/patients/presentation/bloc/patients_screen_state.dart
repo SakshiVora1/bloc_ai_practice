@@ -1,6 +1,5 @@
 part of 'patients_screen_bloc.dart';
 
-@immutable
 sealed class PatientsScreenState {
   const PatientsScreenState();
 }
@@ -9,8 +8,8 @@ final class PatientsScreenInitial extends PatientsScreenState {
   const PatientsScreenInitial();
 }
 
-final class PatientsScreenFailure extends PatientsScreenState {
-  const PatientsScreenFailure({required this.message});
+final class PatientsScreenLoadFailed extends PatientsScreenState {
+  const PatientsScreenLoadFailed({required this.message});
 
   final String message;
 }
@@ -19,58 +18,90 @@ final class PatientsScreenReady extends PatientsScreenState {
   const PatientsScreenReady({
     required this.rows,
     required this.page,
-    required this.limit,
-    required this.totalCount,
     required this.totalPage,
+    required this.totalCount,
+    required this.limit,
     required this.searchQuery,
     required this.activeSortColumn,
     required this.sortDescending,
-    required this.isListLoading,
-    this.lastApiError,
+    required this.isPageOneLoading,
+    required this.isLoadingMore,
+    required this.loadMoreErrorMessage,
   });
 
-  static const int defaultLimit = 80;
+  /// UI shell before the first [PatientsScreenStarted] emission resolves.
+  static const PatientsScreenReady initialPageOneLoading = PatientsScreenReady(
+    rows: <PatientListRow>[],
+    page: 1,
+    totalPage: 1,
+    totalCount: 0,
+    limit: 80,
+    searchQuery: '',
+    activeSortColumn: null,
+    sortDescending: false,
+    isPageOneLoading: true,
+    isLoadingMore: false,
+    loadMoreErrorMessage: null,
+  );
 
   final List<PatientListRow> rows;
   final int page;
-  final int limit;
-  final int totalCount;
   final int totalPage;
+  final int totalCount;
+  final int limit;
   final String searchQuery;
   final PatientSortColumn? activeSortColumn;
   final bool sortDescending;
-  final bool isListLoading;
-  final String? lastApiError;
+  final bool isPageOneLoading;
+  final bool isLoadingMore;
+  final String? loadMoreErrorMessage;
+
+  bool get hasMore => page < totalPage;
+
+  List<Map<String, dynamic>> get sortingPayload =>
+      sortingPayloadFor(activeSortColumn, sortDescending);
+
+  /// API `sorting` query body for [patient/getAllPatients].
+  static List<Map<String, dynamic>> sortingPayloadFor(
+    PatientSortColumn? column,
+    bool descending,
+  ) {
+    if (column == null) {
+      return <Map<String, dynamic>>[];
+    }
+    return <Map<String, dynamic>>[
+      <String, dynamic>{'id': column.apiSortId, 'desc': descending},
+    ];
+  }
 
   PatientsScreenReady copyWith({
     List<PatientListRow>? rows,
     int? page,
-    int? limit,
-    int? totalCount,
     int? totalPage,
+    int? totalCount,
+    int? limit,
     String? searchQuery,
     PatientSortColumn? activeSortColumn,
-    bool clearActiveSortColumn = false,
     bool? sortDescending,
-    bool? isListLoading,
-    String? lastApiError,
-    bool clearLastApiError = false,
+    bool? isPageOneLoading,
+    bool? isLoadingMore,
+    String? loadMoreErrorMessage,
+    bool clearLoadMoreError = false,
   }) {
     return PatientsScreenReady(
       rows: rows ?? this.rows,
       page: page ?? this.page,
-      limit: limit ?? this.limit,
-      totalCount: totalCount ?? this.totalCount,
       totalPage: totalPage ?? this.totalPage,
+      totalCount: totalCount ?? this.totalCount,
+      limit: limit ?? this.limit,
       searchQuery: searchQuery ?? this.searchQuery,
-      activeSortColumn: clearActiveSortColumn
-          ? null
-          : (activeSortColumn ?? this.activeSortColumn),
+      activeSortColumn: activeSortColumn ?? this.activeSortColumn,
       sortDescending: sortDescending ?? this.sortDescending,
-      isListLoading: isListLoading ?? this.isListLoading,
-      lastApiError: clearLastApiError
+      isPageOneLoading: isPageOneLoading ?? this.isPageOneLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreErrorMessage: clearLoadMoreError
           ? null
-          : (lastApiError ?? this.lastApiError),
+          : (loadMoreErrorMessage ?? this.loadMoreErrorMessage),
     );
   }
 }

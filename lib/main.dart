@@ -11,7 +11,9 @@ import 'core/config/environment.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppConfig.init(env: Environment.stage); // Change to .prod / .stage / .ngrok as needed
+  await AppConfig.init(
+    env: Environment.stage,
+  ); // Change to .prod / .stage / .ngrok as needed
   await AppPreferences.instance.initialize();
   await SessionUserInfo.hydrate();
   runApp(const MyApp());

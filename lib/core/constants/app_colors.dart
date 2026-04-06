@@ -51,6 +51,9 @@ abstract final class AppColors {
   static const Color panelScrim = Color(0x66000000);
   static const Color shellAppBarBackground = Color(0xFFFFFFFF);
   static const Color patientsTableHeaderBackground = Color(0xFFF3F4F6);
+
+  /// Patients list table header (spec #F9F9F9).
+  static const Color patientsTableHeaderBar = Color(0xFFF9F9F9);
   static const Color visitRowDivider = Color(0xFFE5E7EB);
   static const Color visitStatusChipText = Color(0xFF111827);
   static const Color visitStatusScheduled = Color(0xFF6366F1);

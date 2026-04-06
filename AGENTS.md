@@ -70,6 +70,8 @@ Guidance for coding agents in this Flutter repo. **Detail lives in `.cursor/`; t
 
 Do **not** scatter user-visible strings, colors, asset paths, or ad-hoc **`TextStyle`**s in widgets/BLoCs when a central type exists:
 
+- **Same literal → reuse:** If **`AppStrings`**, **`AppAssets`**, or **`AppColors`** already defines a constant for that exact string, path, or color, use it — do **not** add a second constant with a different name for the same value.
+
 | Use | For |
 |-----|-----|
 | **`AppStrings`** | Copy and messages |
@@ -165,4 +167,4 @@ For convenience, indexed rule files:
 
 Effective Dart style is bundled into **`flutter-development.mdc`**; there is no separate **`effective-dart.mdc`**.
 
-**Skills** (narrow workflows only): **`flutter-package-install`**, **`prompt-to-docs-plan`**, **`shared-preferences-storage`**, **`device-type-detection`** — each under **`.cursor/skills/<name>/SKILL.md`**. Everything else is covered by **`.cursor/rules/`** and this file.
+**Skills** (narrow workflows only): **`centralized-resources`**, **`flutter-package-install`**, **`prompt-to-docs-plan`**, **`shared-preferences-storage`**, **`device-type-detection`** — each under **`.cursor/skills/<name>/SKILL.md`**. Everything else is covered by **`.cursor/rules/`** and this file.

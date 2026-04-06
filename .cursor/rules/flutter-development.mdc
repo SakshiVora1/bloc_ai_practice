@@ -73,6 +73,6 @@ Use **`flutter_bloc`** as the only state management approach. Align with [Effect
 - Don’t call **APIs** from the view.
 - Don’t use **`SnackBar`** for the standard API error feedback pattern (use toast).
 - Don’t emit **redundant** states or rebuild the whole screen without need.
-- Don’t duplicate logic—**reuse** widgets, constants, and patterns across features.
+- Don’t duplicate logic—**reuse** widgets, constants, and patterns across features. For **`AppStrings`**, **`AppAssets`**, and **`AppColors`**, **never** add a second constant for the same literal — reuse the existing name (**`flutter-assets.mdc`**).
 
 For extended BLoC and repository rules, see `bloc-patterns.mdc` and `repository-boundaries.mdc`.

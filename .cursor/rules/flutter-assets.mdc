@@ -10,5 +10,6 @@ alwaysApply: false
 - Use **`AppStrings`** for user-facing strings.
 - Use **`AppColors`** for color values.
 - Use **`AppFonts`** helpers for text styles.
-- Add missing constants to the centralized classes before usage.
+- **One value, one constant:** Before adding a new member to **`AppStrings`**, **`AppAssets`**, or **`AppColors`**, search that file (and related typography helpers if applicable) for the **same literal** (same path, same hex/RGB, same copy). If it already exists, **reuse that existing name** — do **not** introduce another variable for an identical value.
+- Add missing constants to the centralized classes before usage (only when no equivalent literal is already centralized).
 - Do not hardcode asset paths, strings, colors, or inline text styles in UI code.

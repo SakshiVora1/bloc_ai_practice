@@ -36,6 +36,10 @@ abstract final class AppRouter {
   }
 
   static void goPatients(BuildContext context) {
+    final String? currentName = ModalRoute.of(context)?.settings.name;
+    if (currentName == RouteNames.patients) {
+      return;
+    }
     Navigator.of(context).pushNamedAndRemoveUntil(
       RouteNames.patients,
       (Route<dynamic> route) => false,
