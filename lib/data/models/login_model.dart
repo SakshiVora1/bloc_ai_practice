@@ -111,8 +111,8 @@ class User {
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
-    this.officeLocationIds,
-    this.officeLocations,
+    this.officeLocationIds = const <int>[],
+    this.officeLocations = const <OfficeLocation>[],
     this.organizationName,
     this.subscriptionPeriod,
   });
@@ -249,9 +249,12 @@ class User {
       createdAt: json['created_at'] as String? ?? json['createdAt'] as String?,
       updatedAt: json['updated_at'] as String? ?? json['updatedAt'] as String?,
       deletedAt: json['deleted_at'] as String? ?? json['deletedAt'] as String?,
-      officeLocationIds:
-          json['office_location_ids'] ?? json['officeLocationIds'],
-      officeLocations: json['office_locations'] ?? json['officeLocations'],
+      officeLocationIds: _parseOfficeLocationIds(
+        json['office_location_ids'] ?? json['officeLocationIds'],
+      ),
+      officeLocations: _parseOfficeLocations(
+        json['office_locations'] ?? json['officeLocations'],
+      ),
       organizationName:
           json['organization_name'] as String? ??
           json['organizationName'] as String?,
@@ -316,8 +319,8 @@ class User {
   final String? createdAt;
   final String? updatedAt;
   final String? deletedAt;
-  final Object? officeLocationIds;
-  final Object? officeLocations;
+  final List<int> officeLocationIds;
+  final List<OfficeLocation> officeLocations;
   final String? organizationName;
   final String? subscriptionPeriod;
 
@@ -378,8 +381,67 @@ class User {
     'updated_at': updatedAt,
     'deleted_at': deletedAt,
     'office_location_ids': officeLocationIds,
-    'office_locations': officeLocations,
+    'office_locations': officeLocations
+        .map((OfficeLocation e) => e.toJson())
+        .toList(),
     'organization_name': organizationName,
     'subscription_period': subscriptionPeriod,
   };
+
+  static List<int> _parseOfficeLocationIds(Object? raw) {
+    if (raw is List<int>) {
+      return raw;
+    }
+    if (raw is List<dynamic>) {
+      return raw
+          .map((dynamic e) {
+            if (e is int) {
+              return e;
+            }
+            if (e is String) {
+              return int.tryParse(e);
+            }
+            return null;
+          })
+          .whereType<int>()
+          .toList();
+    }
+    return <int>[];
+  }
+
+  static List<OfficeLocation> _parseOfficeLocations(Object? raw) {
+    if (raw is! List<dynamic>) {
+      return <OfficeLocation>[];
+    }
+    return raw
+        .whereType<Map>()
+        .map((Map m) => OfficeLocation.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+  }
+}
+
+class OfficeLocation {
+  OfficeLocation({this.id, this.name});
+
+  factory OfficeLocation.fromJson(Map<String, dynamic> json) {
+    int? readInt(Object? v) {
+      if (v is int) {
+        return v;
+      }
+      if (v is String) {
+        return int.tryParse(v);
+      }
+      return null;
+    }
+
+    return OfficeLocation(
+      id: readInt(json['id']),
+      name: json['name'] as String?,
+    );
+  }
+
+  final int? id;
+  final String? name;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{'id': id, 'name': name};
 }

@@ -27,6 +27,12 @@ Use **`flutter_bloc`** as the only state management approach. Align with [Effect
 
 **Widget baseline:** prefer **`StatelessWidget`** when no local mutable state is needed; use **`StatefulWidget`** only for clear lifecycle or local UI state boundaries.
 
+## Responsive layout: `MediaQuery` vs `LayoutBuilder`
+
+- Prefer **`MediaQuery`** (e.g. **`MediaQuery.sizeOf(context)`**, **`padding`**, **`orientation`**) for viewport-wide sizing, safe areas, and breakpoints when you do **not** need this subtree’s **incoming `BoxConstraints`**.
+- Use **`LayoutBuilder`** only when behavior must depend on **the parent’s** min/max width or height (constraints that can differ from the full screen, split views, nested flex, `Expanded`/`Flexible` children, or other cases where the allocated size is not the same as `MediaQuery`’s size). Decide explicitly: if **`MediaQuery` is enough, do not use `LayoutBuilder`**.
+- Avoid redundant **`LayoutBuilder`** nesting; each participates in layout work.
+
 ## Business logic
 
 - **Only in the BLoC**: branching on outcomes, orchestration, when to emit which state, navigation triggers (via listener), API **flow** after data returns.
@@ -43,6 +49,7 @@ Use **`flutter_bloc`** as the only state management approach. Align with [Effect
 
 ## Formatting and practices
 
+- **Calendar dates shown in the UI** use **MM/dd/yyyy** via **`formatDateMmDdYyyy`** / **`tryParseDate`** in `lib/core/utils/date_formatters.dart` (not ad-hoc `DateFormat` or duplicated padding logic).
 - Run **`dart format`** before commit; prefer ~80 character lines where readable.
 - Prefer **`final`**; order imports: `dart:` → `package:` → relative (sorted).
 - Annotate return types on functions; avoid **`dynamic`** on public APIs.

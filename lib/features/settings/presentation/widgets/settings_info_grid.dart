@@ -15,7 +15,7 @@ class SettingsInfoGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double width = constraints.maxWidth;
-        final int columns = _resolveColumns(width, maxColumns);
+        final int columns = _resolveColumns(maxColumns);
 
         if (columns <= 1) {
           return Column(
@@ -45,16 +45,10 @@ class SettingsInfoGrid extends StatelessWidget {
   }
 }
 
-int _resolveColumns(double width, int maxColumns) {
+int _resolveColumns(int maxColumns) {
   if (maxColumns <= 1) {
     return 1;
   }
-
-  if (maxColumns >= 3 && width >= 780) {
-    return 3;
-  }
-  if (width >= 520) {
-    return 2;
-  }
-  return 1;
+  // Settings layout: always use the requested column count (up to 3).
+  return maxColumns.clamp(1, 3);
 }

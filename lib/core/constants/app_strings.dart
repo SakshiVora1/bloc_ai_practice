@@ -169,7 +169,7 @@ abstract final class AppStrings {
   static const String visitTypeLabel = 'Visit type';
   static const String visitTypeHint = 'Select visit type';
 
-  static const String settingsPersonalSettingsTitle = 'Settings';
+  static const String settingsPersonalSettingsTitle = 'Personal Settings';
   static const String settingsScreenTitle = 'Settings';
   static const String settingsPersonalInformationTitle = 'Personal information';
   static const String settingsContactTitle = 'Contact';
@@ -193,6 +193,7 @@ abstract final class AppStrings {
   static const String settingsHintLastName = 'Last name';
   static const String settingsHintEmail = 'Email';
   static const String settingsHintPhone = '+1 (555) 000-0000';
+  static const String settingsHintOfficeLocations = 'Select office locations';
   static const String settingsHintTitle = 'Title';
   static const String settingsHintDegree = 'Degree';
   static const String settingsHintMedicalLicense = 'License number';
@@ -200,10 +201,23 @@ abstract final class AppStrings {
   static const String settingsHintNpi = 'NPI';
   static const String settingsHintTaxonomy = 'Taxonomy';
   static const String settingsHintSpecialization = 'Specialization';
-  static const String settingsPersonalSettingDialogTitle = 'Edit profile';
+  static const String settingsPersonalSettingDialogTitle = 'Personal Setting';
   static const String settingsDialogCancel = 'Cancel';
   static const String settingsDialogSave = 'Save';
-  static const String settingsProfileSaved = 'Profile saved';
+  static const String settingsDialogConfirm = 'Confirm';
+  static const String settingsDialogDelete = 'Delete';
+  static const String settingsConfirmDialogTitle = 'Confirm';
+  static const String settingsLogoutConfirmDescription =
+      'Are you sure want to logout?';
+  static const String settingsDeleteDialogTitle = 'Delete account';
+  static const String settingsDeleteConfirmDescription =
+      'Are you sure want to delete an account?';
+  static const String settingsCloseEditPanel = 'Close edit profile panel';
+  static const String settingsPhoneRequired = 'Phone number is required';
+  static const String settingsOfficeLocationRequired =
+      'Select at least one office location';
+  static const String settingsOfficeLocationsLoadFailure =
+      'Unable to load office locations. Please try again.';
   static const String settingsLoadUserFailure =
       'Unable to load your profile. Please try again.';
   static const String settingsLogoutButton = 'Logout';

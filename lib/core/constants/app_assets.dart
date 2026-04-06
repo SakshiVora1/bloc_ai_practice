@@ -22,4 +22,6 @@ abstract final class AppAssets {
   static const String logoDrawer = 'assets/images/logo_drawer.svg';
   static const String subqdocsLogoAppbar =
       'assets/images/subqdocs_logo_appbar.svg';
+  static const String edit = 'assets/images/edit.svg';
+  static const String confirmCheck = 'assets/images/confirm_check.svg';
 }

@@ -18,7 +18,18 @@ Use this skill when UI behavior depends on whether the app is running on phone, 
 1. Classify device type from screen constraints and platform context.
 2. Expose device classification via helper/service under `lib/core/services/` or `lib/core/utils/` for reuse (this repo includes **`DeviceInfoService`** for platform/device metadata where needed).
 3. Keep feature widgets focused on rendering decisions instead of detection logic.
-4. Prefer `MediaQuery` for sizing; use `LayoutBuilder` only when parent constraints are required.
+4. **Default to `MediaQuery`** (`sizeOf`, `padding`, `orientation`) for breakpoints and viewport-relative layout. **Use `LayoutBuilder` only when required:** the UI must branch on **this widget’s allocated constraints** (not the same as the full window), e.g. inside `Expanded`, split panes, or when max width/height from the parent drives layout. If you can answer the question with `MediaQuery` alone, **do not** add `LayoutBuilder`.
+
+## When `LayoutBuilder` is justified (examples)
+
+- Horizontal scroll of a wide table: `maxWidth` from `LayoutBuilder` vs a minimum content width.
+- Adaptive column counts where the **parent** width is not the screen width.
+- Any case where **`constraints.maxWidth` / `maxHeight` from the parent** must drive branching and **`MediaQuery.sizeOf` would be wrong**.
+
+## When to avoid `LayoutBuilder`
+
+- Global breakpoints (phone vs tablet) based on the **window** — use **`MediaQuery`**.
+- Padding, keyboard inset, text scale — use **`MediaQuery`** (and related APIs), not `LayoutBuilder`.
 
 ## Breakpoint Pattern
 
@@ -56,3 +67,4 @@ lib/core/
 - **Don't** scatter breakpoint values across widgets—centralize them.
 - **Don't** put complex detection logic inside widget `build` methods.
 - **Don't** hardcode device-specific values in feature code.
+- **Don't** use **`LayoutBuilder`** for screen-level responsive choices when **`MediaQuery.sizeOf(context)`** (or orientation / padding) is sufficient — see **`.cursor/rules/flutter-development.mdc`** (Responsive layout).

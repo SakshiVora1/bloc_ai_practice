@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:subqdocs_bloc/core/constants/app_assets.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/core/models/session_user_info.dart';
-import 'package:subqdocs_bloc/core/services/app_toast.dart';
 import 'package:subqdocs_bloc/widgets/session_user_avatar.dart';
 
 class SettingsProfileHeader extends StatelessWidget {
-  const SettingsProfileHeader({super.key, required this.info});
+  const SettingsProfileHeader({
+    super.key,
+    required this.info,
+    required this.onEditTap,
+  });
 
   final SessionUserInfo info;
+  final VoidCallback onEditTap;
 
   @override
   Widget build(BuildContext context) {
@@ -33,16 +39,19 @@ class SettingsProfileHeader extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
-            onTap: () => AppToast.showInfo(
-              context,
-              AppStrings.settingsEditNotImplemented,
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: AppColors.drawerItemUnselected,
+            onTap: onEditTap,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Semantics(
+                label: AppStrings.settingsPersonalSettingDialogTitle,
+                button: true,
+                child: SvgPicture.asset(
+                  AppAssets.edit,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.drawerItemUnselected,
+                    BlendMode.srcIn,
+                  ),
+                ),
               ),
             ),
           ),

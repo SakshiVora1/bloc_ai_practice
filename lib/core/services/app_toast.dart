@@ -37,7 +37,6 @@ abstract final class AppToast {
     toastification.show(
       context: context,
       type: type,
-      style: ToastificationStyle.flatColored,
       alignment: _alignment,
       autoCloseDuration: _autoCloseDuration,
       title: Text(message),

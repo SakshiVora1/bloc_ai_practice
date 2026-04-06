@@ -6,6 +6,7 @@ import 'package:subqdocs_bloc/core/config/app_config.dart';
 
 import 'device_info_service.dart';
 import 'api_exceptions.dart';
+import 'unauthorized_session_handler.dart';
 
 class ApiService {
   final Dio _dio;
@@ -39,7 +40,11 @@ class ApiService {
       final Response<dynamic> response = await request();
       return response.data;
     } on DioException catch (e) {
-      throw _unwrapApiException(e);
+      final ApiException apiException = _unwrapApiException(e);
+      if (apiException is UnauthorizedApiException) {
+        await UnauthorizedSessionHandler.handleHttpUnauthorized();
+      }
+      throw apiException;
     } on FormatException catch (e) {
       throw ParseApiException(message: e.message, data: e.source);
     } catch (e) {

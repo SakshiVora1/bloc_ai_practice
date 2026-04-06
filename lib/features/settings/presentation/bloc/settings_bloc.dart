@@ -3,8 +3,10 @@ import 'package:meta/meta.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/core/models/session_user_info.dart';
 import 'package:subqdocs_bloc/core/services/api_exceptions.dart';
+import 'package:subqdocs_bloc/core/services/unauthorized_session_handler.dart';
 import 'package:subqdocs_bloc/data/models/current_user_response.dart';
 import 'package:subqdocs_bloc/data/models/login_model.dart';
+import 'package:subqdocs_bloc/features/settings/data/models/settings_office_location_response.dart';
 import 'package:subqdocs_bloc/features/settings/domain/repositories/settings_repository.dart';
 
 part 'settings_event.dart';
@@ -16,7 +18,18 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       super(const SettingsInitial()) {
     on<SettingsStarted>(_onStarted);
     on<SettingsLogoutPressed>(_onLogoutPressed);
+    on<SettingsDeleteAccountPressed>(_onDeleteAccountPressed);
     on<SettingsProfileSaveRequested>(_onProfileSaveRequested);
+    on<SettingsEditPanelOpened>(_onEditPanelOpened);
+    on<SettingsEditPanelOpenConsumed>(_onEditPanelOpenConsumed);
+    on<SettingsEditPanelClosed>(_onEditPanelClosed);
+    on<SettingsOfficeLocationSelectionToggled>(
+      _onOfficeLocationSelectionToggled,
+    );
+    on<SettingsOfficeLocationSelectionCleared>(
+      _onOfficeLocationSelectionCleared,
+    );
+    on<SettingsOfficeLocationDropdownToggled>(_onOfficeLocationDropdownToggled);
   }
 
   final SettingsRepository _settingsRepository;
@@ -24,6 +37,33 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   bool _isSuccessResponse(String? responseType) {
     final String? type = responseType?.toLowerCase().trim();
     return type == 'success';
+  }
+
+  String _fallbackLoadFailure(String? message) {
+    final String trimmed = message?.trim() ?? '';
+    return trimmed.isNotEmpty ? trimmed : AppStrings.settingsLoadUserFailure;
+  }
+
+  List<int> _seedOfficeLocationIds(User user) {
+    final List<int> fromLocations = user.officeLocations
+        .map((OfficeLocation office) => office.id)
+        .whereType<int>()
+        .toList();
+    if (fromLocations.isNotEmpty) {
+      return fromLocations;
+    }
+    return user.officeLocationIds.toList();
+  }
+
+  List<int> _reconcileOfficeLocationIds({
+    required List<int> selectedIds,
+    required List<SettingsOfficeLocation> options,
+  }) {
+    final Set<int> validOptionIds = options
+        .map((SettingsOfficeLocation office) => office.id)
+        .whereType<int>()
+        .toSet();
+    return selectedIds.where(validOptionIds.contains).toList();
   }
 
   Future<void> _onStarted(
@@ -44,22 +84,29 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         if (isClosed) {
           return;
         }
-        emit(SettingsReady(user: result.responseData!));
+        emit(
+          SettingsReady(
+            user: result.responseData!,
+            selectedOfficeLocationIds: _seedOfficeLocationIds(
+              result.responseData!,
+            ),
+          ),
+        );
         return;
       }
-      final String trimmed = result.message?.trim() ?? '';
-      final String msg = trimmed.isNotEmpty
-          ? trimmed
-          : AppStrings.settingsLoadUserFailure;
-      emit(SettingsLoadFailed(message: msg));
+      emit(SettingsLoadFailed(message: _fallbackLoadFailure(result.message)));
     } on ApiException catch (e) {
+      if (e is UnauthorizedApiException) {
+        await UnauthorizedSessionHandler.handleHttpUnauthorized();
+        if (!isClosed) {
+          emit(const SettingsLoggedOut());
+        }
+        return;
+      }
       if (isClosed) {
         return;
       }
-      final String msg = e.message.trim().isNotEmpty
-          ? e.message.trim()
-          : AppStrings.settingsLoadUserFailure;
-      emit(SettingsLoadFailed(message: msg));
+      emit(SettingsLoadFailed(message: _fallbackLoadFailure(e.message)));
     } catch (_) {
       if (isClosed) {
         return;
@@ -74,12 +121,226 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     SettingsProfileSaveRequested event,
     Emitter<SettingsState> emit,
   ) async {
-    await _settingsRepository.persistSessionUser(event.user);
-    await SessionUserInfo.hydrate();
-    if (isClosed) {
+    final User fallbackUser = switch (state) {
+      SettingsReady(:final user) => user,
+      SettingsProfileSaveFailed(:final user) => user,
+      _ => event.user,
+    };
+    try {
+      final CurrentUserResponse result = await _settingsRepository
+          .updateCurrentUser(event.user);
+      if (isClosed) {
+        return;
+      }
+      if (_isSuccessResponse(result.responseType)) {
+        final String? token = result.responseData?.token?.trim();
+        await _settingsRepository.persistSessionUser(event.user, token: token);
+        await SessionUserInfo.hydrate();
+        if (isClosed) {
+          return;
+        }
+        emit(SettingsReady(user: event.user));
+        return;
+      }
+      emit(
+        SettingsProfileSaveFailed(
+          user: fallbackUser,
+          message: _fallbackLoadFailure(result.message),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (e is UnauthorizedApiException) {
+        await UnauthorizedSessionHandler.handleHttpUnauthorized();
+        if (!isClosed) {
+          emit(const SettingsLoggedOut());
+        }
+        return;
+      }
+      if (isClosed) {
+        return;
+      }
+      emit(
+        SettingsProfileSaveFailed(
+          user: fallbackUser,
+          message: _fallbackLoadFailure(e.message),
+        ),
+      );
+    } catch (_) {
+      if (isClosed) {
+        return;
+      }
+      emit(
+        SettingsProfileSaveFailed(
+          user: fallbackUser,
+          message: AppStrings.settingsLoadUserFailure,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onEditPanelOpened(
+    SettingsEditPanelOpened event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final SettingsState current = state;
+    if (current is! SettingsReady) {
       return;
     }
-    emit(SettingsReady(user: event.user));
+    final List<int> seededIds = current.selectedOfficeLocationIds.isNotEmpty
+        ? current.selectedOfficeLocationIds
+        : _seedOfficeLocationIds(current.user);
+    emit(
+      current.copyWith(
+        shouldOpenEditPanel: true,
+        isEditPanelOpen: true,
+        isOfficeLocationsLoading: true,
+        selectedOfficeLocationIds: seededIds,
+        isOfficeLocationDropdownOpen: false,
+        clearOfficeLocationsError: true,
+      ),
+    );
+
+    try {
+      final SettingsOfficeLocationResponse response = await _settingsRepository
+          .fetchOfficeLocations();
+      if (isClosed) {
+        return;
+      }
+      final SettingsState maybeLatest = state;
+      if (maybeLatest is! SettingsReady) {
+        return;
+      }
+      if (_isSuccessResponse(response.responseType)) {
+        emit(
+          maybeLatest.copyWith(
+            isOfficeLocationsLoading: false,
+            officeLocations: response.responseData,
+            selectedOfficeLocationIds: _reconcileOfficeLocationIds(
+              selectedIds: maybeLatest.selectedOfficeLocationIds,
+              options: response.responseData,
+            ),
+            clearOfficeLocationsError: true,
+          ),
+        );
+        return;
+      }
+      final String trimmed = response.message?.trim() ?? '';
+      emit(
+        maybeLatest.copyWith(
+          isOfficeLocationsLoading: false,
+          officeLocationsErrorMessage: trimmed.isNotEmpty
+              ? trimmed
+              : AppStrings.settingsOfficeLocationsLoadFailure,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (e is UnauthorizedApiException) {
+        await UnauthorizedSessionHandler.handleHttpUnauthorized();
+        if (!isClosed) {
+          emit(const SettingsLoggedOut());
+        }
+        return;
+      }
+      if (isClosed) {
+        return;
+      }
+      final SettingsState maybeLatest = state;
+      if (maybeLatest is! SettingsReady) {
+        return;
+      }
+      emit(
+        maybeLatest.copyWith(
+          isOfficeLocationsLoading: false,
+          officeLocationsErrorMessage: e.message.trim().isNotEmpty
+              ? e.message.trim()
+              : AppStrings.settingsOfficeLocationsLoadFailure,
+        ),
+      );
+    } catch (_) {
+      if (isClosed) {
+        return;
+      }
+      final SettingsState maybeLatest = state;
+      if (maybeLatest is! SettingsReady) {
+        return;
+      }
+      emit(
+        maybeLatest.copyWith(
+          isOfficeLocationsLoading: false,
+          officeLocationsErrorMessage:
+              AppStrings.settingsOfficeLocationsLoadFailure,
+        ),
+      );
+    }
+  }
+
+  void _onEditPanelOpenConsumed(
+    SettingsEditPanelOpenConsumed event,
+    Emitter<SettingsState> emit,
+  ) {
+    final SettingsState current = state;
+    if (current is! SettingsReady || !current.shouldOpenEditPanel) {
+      return;
+    }
+    emit(current.copyWith(shouldOpenEditPanel: false));
+  }
+
+  void _onEditPanelClosed(
+    SettingsEditPanelClosed event,
+    Emitter<SettingsState> emit,
+  ) {
+    final SettingsState current = state;
+    if (current is! SettingsReady) {
+      return;
+    }
+    emit(
+      current.copyWith(
+        isEditPanelOpen: false,
+        isOfficeLocationDropdownOpen: false,
+      ),
+    );
+  }
+
+  void _onOfficeLocationSelectionToggled(
+    SettingsOfficeLocationSelectionToggled event,
+    Emitter<SettingsState> emit,
+  ) {
+    final SettingsState current = state;
+    if (current is! SettingsReady) {
+      return;
+    }
+    final List<int> next = current.selectedOfficeLocationIds.toList();
+    if (next.contains(event.officeLocationId)) {
+      next.remove(event.officeLocationId);
+    } else {
+      next.add(event.officeLocationId);
+    }
+    emit(current.copyWith(selectedOfficeLocationIds: next));
+  }
+
+  void _onOfficeLocationSelectionCleared(
+    SettingsOfficeLocationSelectionCleared event,
+    Emitter<SettingsState> emit,
+  ) {
+    final SettingsState current = state;
+    if (current is! SettingsReady) {
+      return;
+    }
+    if (current.selectedOfficeLocationIds.isEmpty) {
+      return;
+    }
+    emit(current.copyWith(selectedOfficeLocationIds: const <int>[]));
+  }
+
+  void _onOfficeLocationDropdownToggled(
+    SettingsOfficeLocationDropdownToggled event,
+    Emitter<SettingsState> emit,
+  ) {
+    final SettingsState current = state;
+    if (current is! SettingsReady) {
+      return;
+    }
+    emit(current.copyWith(isOfficeLocationDropdownOpen: event.isOpen));
   }
 
   Future<void> _onLogoutPressed(
@@ -98,5 +359,68 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       return;
     }
     emit(SettingsLoggedOut(user: user));
+  }
+
+  Future<void> _onDeleteAccountPressed(
+    SettingsDeleteAccountPressed event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final User user = switch (state) {
+      SettingsReady(:final user) => user,
+      SettingsDeletingAccount(:final user) => user,
+      SettingsDeleteAccountFailed(:final user) => user,
+      SettingsProfileSaveFailed(:final user) => user,
+      _ => User(id: event.userId),
+    };
+
+    emit(SettingsDeletingAccount(user: user));
+    try {
+      final CurrentUserResponse result = await _settingsRepository
+          .deleteCurrentUser(event.userId);
+      if (isClosed) {
+        return;
+      }
+      if (_isSuccessResponse(result.responseType)) {
+        await _settingsRepository.logout();
+        if (isClosed) {
+          return;
+        }
+        emit(SettingsLoggedOut(user: user));
+        return;
+      }
+      emit(
+        SettingsDeleteAccountFailed(
+          user: user,
+          message: _fallbackLoadFailure(result.message),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (e is UnauthorizedApiException) {
+        await UnauthorizedSessionHandler.handleHttpUnauthorized();
+        if (!isClosed) {
+          emit(const SettingsLoggedOut());
+        }
+        return;
+      }
+      if (isClosed) {
+        return;
+      }
+      emit(
+        SettingsDeleteAccountFailed(
+          user: user,
+          message: _fallbackLoadFailure(e.message),
+        ),
+      );
+    } catch (_) {
+      if (isClosed) {
+        return;
+      }
+      emit(
+        SettingsDeleteAccountFailed(
+          user: user,
+          message: AppStrings.settingsLoadUserFailure,
+        ),
+      );
+    }
   }
 }

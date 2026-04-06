@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-import 'package:subqdocs_bloc/core/constants/app_preferences_keys.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/core/models/session_user_info.dart';
 import 'package:subqdocs_bloc/core/routing/app_router.dart';
@@ -22,7 +21,7 @@ abstract final class UnauthorizedSessionHandler {
   /// toast run at most once per scheduler generation until the post-frame
   /// callback runs.
   static Future<void> handleHttpUnauthorized() async {
-    await AppPreferences.instance.removeKey(AppPreferencesKeys.loginResponse);
+    await AppPreferences.instance.clearAll();
     SessionUserInfo.clearCache();
     SessionUserCache.notifyLoginResponseChanged();
 

@@ -1,4 +1,5 @@
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 
 String scheduleVisitTimeLabel(DateTime visitInstantUtc) {
   final DateTime t = visitInstantUtc.toLocal();
@@ -28,7 +29,5 @@ String scheduleVisitDateLabel(DateTime visitInstantUtc, DateTime now) {
   if (d == 1) {
     return AppStrings.homeScheduleDateTomorrow;
   }
-  final String mm = visitLocal.month.toString().padLeft(2, '0');
-  final String dd = visitLocal.day.toString().padLeft(2, '0');
-  return '$mm/$dd/${visitLocal.year}';
+  return formatDateMmDdYyyy(visitLocal);
 }

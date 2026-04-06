@@ -1,4 +1,6 @@
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 import 'package:subqdocs_bloc/data/models/login_model.dart';
+import 'package:subqdocs_bloc/features/settings/presentation/utils/settings_profile_merge.dart';
 
 /// Returns [value] trimmed, or `'-'` when null/empty.
 String settingsDisplayOrDash(String? value) {
@@ -6,25 +8,39 @@ String settingsDisplayOrDash(String? value) {
   return v.isEmpty ? '-' : v;
 }
 
-String? settingsOfficeLocationIdsText(User? user) {
-  final Object? raw = user?.officeLocationIds;
-  if (raw is! List<dynamic>) {
+String? settingsOfficeLocationNamesText(User? user) {
+  final List<OfficeLocation>? offices = user?.officeLocations;
+  if (offices == null || offices.isEmpty) {
     return null;
   }
-  final Iterable<int> ids = raw
-      .map((dynamic e) {
-        if (e is int) {
-          return e;
-        }
-        if (e is String) {
-          return int.tryParse(e) ?? 0;
-        }
-        return 0;
-      })
-      .where((int e) => e != 0);
-  final List<int> list = ids.toList();
-  if (list.isEmpty) {
+  final List<String> names = offices
+      .map((OfficeLocation office) => (office.name ?? '').trim())
+      .where((String name) => name.isNotEmpty)
+      .toList();
+  if (names.isEmpty) {
     return null;
   }
-  return list.join(', ');
+  return names.join(', ');
+}
+
+/// Parses ISO or API date strings and shows **MM/dd/yyyy**; otherwise `'-'`.
+String settingsDisplayCalendarDate(Object? raw) {
+  if (raw == null) {
+    return '-';
+  }
+  final String s = raw.toString().trim();
+  if (s.isEmpty) {
+    return '-';
+  }
+  final DateTime? d = tryParseDate(s);
+  if (d != null) {
+    return formatDateMmDdYyyy(d);
+  }
+  return s;
+}
+
+/// US phone in `+1 (###) ###-####` for read-only display, or `'-'` when empty.
+String settingsDisplayPhone(String? contactNo) {
+  final String masked = settingsFormatPhoneMaskInitial(contactNo);
+  return masked.isEmpty ? '-' : masked;
 }

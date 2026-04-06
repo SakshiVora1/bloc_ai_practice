@@ -37,28 +37,6 @@ Map<String, dynamic> settingsUserUpdateRequestBody(User user) {
     'license_expiry_date': _licenseExpiryForUpdateApi(user.licenseExpiryDate),
     'degree': user.degree,
     'pin': user.pin,
-    'office_location_ids': _officeLocationIdsList(user),
+    'office_location_ids': user.officeLocationIds,
   };
-}
-
-List<int> _officeLocationIdsList(User user) {
-  final Object? raw = user.officeLocationIds;
-  if (raw is List<int>) {
-    return raw;
-  }
-  if (raw is List<dynamic>) {
-    return raw
-        .map((dynamic e) {
-          if (e is int) {
-            return e;
-          }
-          if (e is String) {
-            return int.tryParse(e) ?? 0;
-          }
-          return 0;
-        })
-        .where((int id) => id != 0)
-        .toList();
-  }
-  return <int>[];
 }

@@ -1,4 +1,6 @@
-/// Pure date display formatting for the schedule header (no Flutter imports).
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
+
+/// Pure date display formatting for the schedule header (uses [formatDateMmDdYyyy]).
 String formatDisplayDate(
   DateTime? startDate,
   DateTime? endDate, {
@@ -16,7 +18,7 @@ String formatDisplayDate(
     final DateTime end = _dateOnly(endDate);
     final DateTime rangeStart = start.isBefore(end) ? start : end;
     final DateTime rangeEnd = start.isBefore(end) ? end : start;
-    return '${_formatMdY(rangeStart)} - ${_formatMdY(rangeEnd)}';
+    return '${formatDateMmDdYyyy(rangeStart)} - ${formatDateMmDdYyyy(rangeEnd)}';
   }
 
   final DateTime today = _dateOnly(now());
@@ -29,13 +31,7 @@ String formatDisplayDate(
   if (_isSameDay(start, today.add(const Duration(days: 1)))) {
     return tomorrowLabel;
   }
-  return _formatMdY(start);
-}
-
-String _formatMdY(DateTime d) {
-  final String m = d.month.toString().padLeft(2, '0');
-  final String day = d.day.toString().padLeft(2, '0');
-  return '$m/$day/${d.year}';
+  return formatDateMmDdYyyy(start);
 }
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);

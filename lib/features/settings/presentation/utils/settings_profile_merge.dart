@@ -1,17 +1,18 @@
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 import 'package:subqdocs_bloc/data/models/login_model.dart';
 
 /// Normalizes phone to 10 digits (US) for [User.contactNo], or empty string.
 String settingsNormalizeContactSave(String maskedOrRaw) {
   final String d = maskedOrRaw.replaceAll(RegExp(r'\D'), '');
-  if (d.isEmpty) {
-    return '';
-  }
-  if (d.length == 11 && d.startsWith('1')) {
-    return d.substring(1);
-  }
-  if (d.length == 10) {
-    return d;
-  }
+  // if (d.isEmpty) {
+  //   return '';
+  // }
+  // if (d.length == 11 && d.startsWith('1')) {
+  //   return d.substring(1);
+  // }
+  // if (d.length == 10) {
+  //   return d;
+  // }
   return d;
 }
 
@@ -54,14 +55,14 @@ User mergeUserFromProfileForm(
   String? nationalProviderIdentifier,
   String? taxonomyCode,
   String? specialization,
+  required List<int> officeLocationIds,
+  required List<OfficeLocation> officeLocations,
 }) {
   final dynamic licenseValue = !isDoctor
       ? base.licenseExpiryDate
       : (licenseExpiry == null
             ? base.licenseExpiryDate
-            : '${licenseExpiry.year.toString().padLeft(4, '0')}-'
-                  '${licenseExpiry.month.toString().padLeft(2, '0')}-'
-                  '${licenseExpiry.day.toString().padLeft(2, '0')}');
+            : formatYyyyMmDd(licenseExpiry));
 
   return User(
     thirdPartyId: base.thirdPartyId,
@@ -125,8 +126,8 @@ User mergeUserFromProfileForm(
     createdAt: base.createdAt,
     updatedAt: base.updatedAt,
     deletedAt: base.deletedAt,
-    officeLocationIds: base.officeLocationIds,
-    officeLocations: base.officeLocations,
+    officeLocationIds: officeLocationIds,
+    officeLocations: officeLocations,
     organizationName: base.organizationName,
     subscriptionPeriod: base.subscriptionPeriod,
   );

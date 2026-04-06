@@ -1,4 +1,5 @@
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 
 String formatHomeVisitDateTime(
   String? appointmentTime,
@@ -19,10 +20,7 @@ String formatHomeVisitDateTime(
         );
   final String mm = '${local.minute}'.padLeft(2, '0');
   final String amPm = local.hour >= 12 ? 'PM' : 'AM';
-  final String month = '${local.month}'.padLeft(2, '0');
-  final String day = '${local.day}'.padLeft(2, '0');
-  final String year = '${local.year}';
-  return '$hh:$mm $amPm $month/$day/$year';
+  return '$hh:$mm $amPm ${formatDateMmDdYyyy(local)}';
 }
 
 DateTime? parseHomeVisitDateTime(String? value) {
@@ -83,9 +81,7 @@ String homeVisitDateAndAge(Object? dobRaw, Object? ageRaw) {
       ? DateTime.tryParse(dob)
       : null;
   final String datePart = parsed is DateTime
-      ? '${parsed.month.toString().padLeft(2, '0')}/'
-            '${parsed.day.toString().padLeft(2, '0')}/'
-            '${parsed.year}'
+      ? formatDateMmDdYyyy(parsed)
       : AppStrings.homeUnknownLabel;
   if (age != null && age > 0) {
     return '$datePart · $age';

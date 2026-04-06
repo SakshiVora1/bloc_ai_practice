@@ -9,12 +9,20 @@ class SettingsScreenTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(title, style: AppFonts.medium(16, AppColors.scheduleVisitAccent)),
-        const SizedBox(height: 8),
-        Container(width: 120, height: 2, color: AppColors.scheduleVisitAccent),
+        Container(
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.scheduleVisitAccent),
+            ),
+          ),
+          child: Text(
+            title,
+            style: AppFonts.medium(16, AppColors.scheduleVisitAccent),
+          ),
+        ),
       ],
     );
   }

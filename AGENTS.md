@@ -58,6 +58,7 @@ Guidance for coding agents in this Flutter repo. **Detail lives in `.cursor/`; t
 
 - **`BlocBuilder`** (or **`BlocSelector`** / **`buildWhen`**) for rendering; **`BlocListener`** for **navigation, dialogs, and toasts** tied to state transitions.
 - Do **not** navigate from inside the BLoC.
+- **Sizing / responsive:** prefer **`MediaQuery`** (e.g. **`MediaQuery.sizeOf`**) for viewport and breakpoints. Use **`LayoutBuilder`** only when layout must follow **parent `BoxConstraints`** and `MediaQuery` is not enough — see **`.cursor/rules/flutter-development.mdc`** and **`.cursor/skills/device-type-detection/SKILL.md`**.
 
 ### Configuration and URLs
 

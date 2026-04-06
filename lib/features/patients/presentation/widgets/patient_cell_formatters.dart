@@ -1,4 +1,5 @@
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 
 abstract final class PatientCellFormatters {
   PatientCellFormatters._();
@@ -16,7 +17,12 @@ abstract final class PatientCellFormatters {
     if (raw == null || raw.trim().isEmpty) {
       return AppStrings.patientsNotAvailable;
     }
-    return raw.trim();
+    final String t = raw.trim();
+    final DateTime? d = tryParseDate(t);
+    if (d != null) {
+      return formatDateMmDdYyyy(d);
+    }
+    return t;
   }
 
   static String genderInitial(String? gender) {
