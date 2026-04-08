@@ -17,7 +17,7 @@ class HomeBodyContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             const Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 0),
               child: HomeScheduleTopSection(),
             ),
             const SizedBox(height: 16),
@@ -27,18 +27,16 @@ class HomeBodyContent extends StatelessWidget {
                 children: <Widget>[
                   const HomeScheduleSectionsScroll(),
                   Positioned(
-                    right: 8,
-                    bottom: 8,
-                    child: SafeArea(
-                      child: FloatingActionButton.extended(
-                        onPressed: () {},
-                        backgroundColor: AppColors.recordNow,
-                        foregroundColor: AppColors.black,
-                        icon: const Icon(Icons.fiber_manual_record, size: 18),
-                        label: Text(
-                          AppStrings.drawerRecordNow,
-                          style: AppFonts.semiBold(14, AppColors.black),
-                        ),
+                    right: 16,
+                    bottom: 16,
+                    child: FloatingActionButton.extended(
+                      onPressed: () {},
+                      backgroundColor: AppColors.recordNow,
+                      foregroundColor: AppColors.black,
+                      icon: const Icon(Icons.fiber_manual_record, size: 18),
+                      label: Text(
+                        AppStrings.drawerRecordNow,
+                        style: AppFonts.semiBold(14, AppColors.black),
                       ),
                     ),
                   ),

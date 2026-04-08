@@ -119,7 +119,7 @@ class HomeVisitRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: MediaQuery.of(context).orientation == Orientation.portrait
+            flex: MediaQuery.orientationOf(context) == Orientation.portrait
                 ? 2
                 : 3,
             child: Padding(

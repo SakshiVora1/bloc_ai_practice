@@ -11,13 +11,15 @@ class DateSelectorWidget extends StatelessWidget {
     required this.displayLabel,
     required this.onPrevious,
     required this.onNext,
-    required this.onCenterTap,
+    this.onCenterTap,
+    this.centerWidget,
   });
 
   final String displayLabel;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
-  final VoidCallback onCenterTap;
+  final VoidCallback? onCenterTap;
+  final Widget? centerWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,8 @@ class DateSelectorWidget extends StatelessWidget {
       children: <Widget>[
         IconButtonWidget(icon: Icons.chevron_left, onPressed: onPrevious),
         const SizedBox(width: 8),
-        _DatePill(label: displayLabel, onTap: onCenterTap),
+        centerWidget ??
+            DatePill(label: displayLabel, onTap: onCenterTap ?? () {}),
         const SizedBox(width: 8),
         IconButtonWidget(icon: Icons.chevron_right, onPressed: onNext),
       ],
@@ -34,11 +37,11 @@ class DateSelectorWidget extends StatelessWidget {
   }
 }
 
-class _DatePill extends StatelessWidget {
-  const _DatePill({required this.label, required this.onTap});
+class DatePill extends StatelessWidget {
+  const DatePill({required this.label, this.onTap});
 
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

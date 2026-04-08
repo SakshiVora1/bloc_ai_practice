@@ -115,8 +115,9 @@ class _SettingsViewState extends State<SettingsView> {
             final String role = (user.role ?? '').trim().toLowerCase();
             final bool isDoctor = role == 'doctor';
             return Drawer(
-              width: MediaQuery.sizeOf(context).width * 0.85,
+              width: MediaQuery.sizeOf(context).width * 0.65,
               child: PersonalSettingsEditPanel(
+                key: ValueKey<String>('${user.id}_${user.profileImage ?? ''}'),
                 baseUser: user,
                 isDoctor: isDoctor,
               ),

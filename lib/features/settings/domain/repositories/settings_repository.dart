@@ -5,7 +5,13 @@ import 'package:subqdocs_bloc/features/settings/data/models/settings_office_loca
 abstract interface class SettingsRepository {
   Future<CurrentUserResponse> fetchCurrentUser();
 
-  Future<CurrentUserResponse> updateCurrentUser(User user);
+  /// Persists profile fields. Use [profileImageFilePath] and/or
+  /// [deleteProfileImage] to send multipart `user_image` / `isDeleteProfileImage`.
+  Future<CurrentUserResponse> updateCurrentUser(
+    User user, {
+    String? profileImageFilePath,
+    bool deleteProfileImage = false,
+  });
 
   Future<CurrentUserResponse> deleteCurrentUser(int userId);
 

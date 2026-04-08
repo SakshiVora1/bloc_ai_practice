@@ -41,7 +41,7 @@ abstract final class AppStrings {
   static const String homeUnknownLabel = '—';
   static const String homeCurrentLabel = 'Current';
   static const String homeUpcomingLabel = 'Upcoming';
-  static const String homeCompletedLabel = 'Completed';
+  static const String homeCompletedLabel = 'Recorded';
   static const String homeNoVisitsFound = 'No visits found';
 
   static const String drawerSchedule = 'Schedule';
@@ -213,6 +213,20 @@ abstract final class AppStrings {
   static const String settingsDeleteConfirmDescription =
       'Are you sure want to delete an account?';
   static const String settingsCloseEditPanel = 'Close edit profile panel';
+  static const String settingsProfilePhotoSheetTitle = 'Profile photo';
+  static const String settingsPickFromCamera = 'Pick from Camera';
+  static const String settingsPickFromGallery = 'Pick from Gallery';
+  static const String settingsRemoveProfileImage = 'Remove Profile Image';
+  static const String settingsCameraPermissionDenied =
+      'Camera access is required to take a profile photo.';
+  static const String settingsCameraPermissionPermanentlyDenied =
+      'Camera access is turned off. Enable it in system Settings to take a photo.';
+  static const String settingsPhotosPermissionDenied =
+      'Photo library access is required to choose a profile photo.';
+  static const String settingsPhotosPermissionPermanentlyDenied =
+      'Photo access is turned off. Enable it in system Settings to choose a photo.';
+  static const String settingsImagePickFailed =
+      'Could not pick an image. Please try again.';
   static const String settingsPhoneRequired = 'Phone number is required';
   static const String settingsOfficeLocationRequired =
       'Select at least one office location';

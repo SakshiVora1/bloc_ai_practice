@@ -6,6 +6,7 @@ import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/core/enums/app_drawer_item.dart';
 import 'package:subqdocs_bloc/core/models/session_user_info.dart';
+import 'package:subqdocs_bloc/core/services/session_user_cache.dart';
 import 'package:subqdocs_bloc/core/routing/app_router.dart';
 import 'package:subqdocs_bloc/core/services/app_toast.dart';
 import 'package:subqdocs_bloc/widgets/session_user_avatar.dart';
@@ -22,78 +23,89 @@ class CommonAppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SessionUserInfo info = SessionUserInfo.loadSync();
+    return ValueListenableBuilder<int>(
+      valueListenable: SessionUserCache.revision,
+      builder: (BuildContext context, int _, Widget? __) {
+        final SessionUserInfo info = SessionUserInfo.loadSync();
 
-    return Drawer(
-      width: 300,
-      backgroundColor: AppColors.white,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _DrawerHeader(
-                info: info,
-                onProfileTap: () {
-                  AppRouter.maybePop(context);
-                  AppRouter.goSettings(context);
-                },
+        return Drawer(
+          width: 300,
+          backgroundColor: AppColors.white,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _DrawerHeader(
+                    info: info,
+                    onProfileTap: () {
+                      AppRouter.maybePop(context);
+                      AppRouter.goSettings(context);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _RecordNowButton(
+                    onTap: () => _handleTap(context, AppDrawerItem.schedule),
+                  ),
+                  const SizedBox(height: 8),
+                  _DrawerMenuItem(
+                    title: AppStrings.drawerSchedule,
+                    iconPath: AppAssets.visitsMenu,
+                    selected: selectedItem == AppDrawerItem.schedule,
+                    onTap: () => _handleTap(context, AppDrawerItem.schedule),
+                  ),
+                  _DrawerMenuItem(
+                    title: AppStrings.drawerPatients,
+                    iconPath: AppAssets.patientsMenu,
+                    selected: selectedItem == AppDrawerItem.patients,
+                    onTap: () => _handleTap(context, AppDrawerItem.patients),
+                  ),
+                  _DrawerMenuItem(
+                    title: AppStrings.drawerPrescription,
+                    iconPath: AppAssets.prescription,
+                    selected: selectedItem == AppDrawerItem.prescription,
+                    onTap: () =>
+                        _handleTap(context, AppDrawerItem.prescription),
+                  ),
+                  _DrawerMenuItem(
+                    title: AppStrings.drawerPatientCheckIn,
+                    iconPath: AppAssets.notepad,
+                    selected: selectedItem == AppDrawerItem.patientCheckIn,
+                    onTap: () =>
+                        _handleTap(context, AppDrawerItem.patientCheckIn),
+                  ),
+                  const Spacer(),
+                  _DrawerMenuItem(
+                    title: AppStrings.drawerContactSupport,
+                    iconPath: AppAssets.email,
+                    selected: selectedItem == AppDrawerItem.contactSupport,
+                    onTap: () =>
+                        _handleTap(context, AppDrawerItem.contactSupport),
+                  ),
+                  _DrawerMenuItem(
+                    title: AppStrings.drawerSettings,
+                    iconPath: AppAssets.settingsDrawer,
+                    selected: selectedItem == AppDrawerItem.settings,
+                    onTap: () => _handleTap(context, AppDrawerItem.settings),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Text(
+                      AppStrings.drawerVersionLabel,
+                      style: AppFonts.regular(
+                        12,
+                        AppColors.drawerItemUnselected,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              _RecordNowButton(
-                onTap: () => _handleTap(context, AppDrawerItem.schedule),
-              ),
-              const SizedBox(height: 8),
-              _DrawerMenuItem(
-                title: AppStrings.drawerSchedule,
-                iconPath: AppAssets.visitsMenu,
-                selected: selectedItem == AppDrawerItem.schedule,
-                onTap: () => _handleTap(context, AppDrawerItem.schedule),
-              ),
-              _DrawerMenuItem(
-                title: AppStrings.drawerPatients,
-                iconPath: AppAssets.patientsMenu,
-                selected: selectedItem == AppDrawerItem.patients,
-                onTap: () => _handleTap(context, AppDrawerItem.patients),
-              ),
-              _DrawerMenuItem(
-                title: AppStrings.drawerPrescription,
-                iconPath: AppAssets.prescription,
-                selected: selectedItem == AppDrawerItem.prescription,
-                onTap: () => _handleTap(context, AppDrawerItem.prescription),
-              ),
-              _DrawerMenuItem(
-                title: AppStrings.drawerPatientCheckIn,
-                iconPath: AppAssets.notepad,
-                selected: selectedItem == AppDrawerItem.patientCheckIn,
-                onTap: () => _handleTap(context, AppDrawerItem.patientCheckIn),
-              ),
-              const Spacer(),
-              _DrawerMenuItem(
-                title: AppStrings.drawerContactSupport,
-                iconPath: AppAssets.email,
-                selected: selectedItem == AppDrawerItem.contactSupport,
-                onTap: () => _handleTap(context, AppDrawerItem.contactSupport),
-              ),
-              _DrawerMenuItem(
-                title: AppStrings.drawerSettings,
-                iconPath: AppAssets.settingsDrawer,
-                selected: selectedItem == AppDrawerItem.settings,
-                onTap: () => _handleTap(context, AppDrawerItem.settings),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Text(
-                  AppStrings.drawerVersionLabel,
-                  style: AppFonts.regular(12, AppColors.drawerItemUnselected),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

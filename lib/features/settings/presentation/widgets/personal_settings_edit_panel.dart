@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,6 +19,8 @@ import 'package:subqdocs_bloc/features/login/presentation/login_screen_validatio
 import 'package:subqdocs_bloc/features/settings/data/models/settings_office_location_response.dart';
 import 'package:subqdocs_bloc/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:subqdocs_bloc/features/settings/presentation/utils/settings_profile_merge.dart';
+import 'package:subqdocs_bloc/features/settings/presentation/widgets/edit_panel/edit_panel_avatar.dart';
+import 'package:subqdocs_bloc/features/settings/presentation/widgets/edit_panel/edit_panel_office_selector.dart';
 import 'package:subqdocs_bloc/features/settings/presentation/widgets/settings_section_title.dart';
 import 'package:subqdocs_bloc/widgets/common_button.dart';
 import 'package:subqdocs_bloc/widgets/common_text_form_field.dart';
@@ -55,6 +58,9 @@ class _PersonalSettingsEditPanelState extends State<PersonalSettingsEditPanel> {
   DateTime? _licenseDate;
   bool _isSaving = false;
   String? _officeLocationValidationError;
+
+  bool _pendingRemoveProfileImage = false;
+  String? _profileImagePathForUpload;
 
   static const double _fieldGap = 12;
   static const double _sectionGap = 16;
@@ -139,13 +145,15 @@ class _PersonalSettingsEditPanelState extends State<PersonalSettingsEditPanel> {
     setState(() => _officeLocationValidationError = null);
   }
 
-  void _toggleOfficeLocationSelection(SettingsBloc bloc, int officeLocationId) {
-    _clearOfficeLocationError();
-    bloc.add(
-      SettingsOfficeLocationSelectionToggled(
-        officeLocationId: officeLocationId,
-      ),
-    );
+  void _onImageChanged(String? imagePath, bool isRemoved) {
+    setState(() {
+      _pendingRemoveProfileImage = isRemoved;
+      if (imagePath != null) {
+        _profileImagePathForUpload = imagePath;
+      } else if (isRemoved) {
+        _profileImagePathForUpload = null;
+      }
+    });
   }
 
   List<OfficeLocation> _selectedOfficeLocations(SettingsReady ready) {
@@ -193,9 +201,19 @@ class _PersonalSettingsEditPanelState extends State<PersonalSettingsEditPanel> {
         specialization: _specializationController.text,
         officeLocationIds: ready.selectedOfficeLocationIds,
         officeLocations: _selectedOfficeLocations(ready),
+        applyProfileImageOverride: _pendingRemoveProfileImage,
+        profileImage: null,
       );
       final SettingsBloc bloc = context.read<SettingsBloc>();
-      bloc.add(SettingsProfileSaveRequested(user: merged));
+      bloc.add(
+        SettingsProfileSaveRequested(
+          user: merged,
+          profileImageFilePath: _pendingRemoveProfileImage
+              ? null
+              : _profileImagePathForUpload,
+          deleteProfileImage: _pendingRemoveProfileImage,
+        ),
+      );
       final SettingsState result = await bloc.stream
           .firstWhere(
             (SettingsState s) =>
@@ -247,195 +265,6 @@ class _PersonalSettingsEditPanelState extends State<PersonalSettingsEditPanel> {
     );
   }
 
-  Widget _officeLocationDropdown(SettingsReady ready) {
-    final SettingsBloc bloc = context.read<SettingsBloc>();
-    final Map<int, String> namesById = <int, String>{
-      for (final SettingsOfficeLocation location in ready.officeLocations)
-        if (location.id != null && (location.name ?? '').trim().isNotEmpty)
-          location.id!: location.name!.trim(),
-    };
-    final List<int> selectedIds = ready.selectedOfficeLocationIds;
-    final List<int> selectedNamedIds = selectedIds
-        .where((int id) => namesById.containsKey(id))
-        .toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            bloc.add(
-              SettingsOfficeLocationDropdownToggled(
-                isOpen: !ready.isOfficeLocationDropdownOpen,
-              ),
-            );
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.textFieldBorder),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Expanded(
-                  child: selectedNamedIds.isEmpty
-                      ? Text(
-                          AppStrings.settingsHintOfficeLocations,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppFonts.regular(14, AppColors.primaryText),
-                        )
-                      : Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: selectedNamedIds.map((int id) {
-                            final String label = namesById[id]!;
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.drawerItemSelected.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  Text(
-                                    label,
-                                    style: AppFonts.medium(
-                                      14,
-                                      AppColors.drawerItemSelected,
-                                    ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      _toggleOfficeLocationSelection(bloc, id);
-                                    },
-                                    child: const Padding(
-                                      padding: EdgeInsets.only(left: 6),
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: AppColors.drawerItemSelected,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                ),
-                if (selectedIds.isNotEmpty)
-                  InkWell(
-                    onTap: () {
-                      _clearOfficeLocationError();
-                      bloc.add(const SettingsOfficeLocationSelectionCleared());
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 8, right: 8),
-                      child: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: AppColors.drawerItemUnselected,
-                      ),
-                    ),
-                  ),
-                Icon(
-                  ready.isOfficeLocationDropdownOpen
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  color: AppColors.drawerItemUnselected,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (ready.isOfficeLocationDropdownOpen) ...<Widget>[
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.textFieldBorder),
-            ),
-            child: ready.isOfficeLocationsLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : Column(
-                    children: ready.officeLocations.map((
-                      SettingsOfficeLocation item,
-                    ) {
-                      final int? officeId = item.id;
-                      if (officeId == null) {
-                        return const SizedBox.shrink();
-                      }
-                      final String officeName = (item.name ?? '').trim();
-                      if (officeName.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      final bool selected = ready.selectedOfficeLocationIds
-                          .contains(officeId);
-                      return InkWell(
-                        onTap: () {
-                          _toggleOfficeLocationSelection(bloc, officeId);
-                        },
-                        child: Row(
-                          children: <Widget>[
-                            Checkbox(
-                              visualDensity: VisualDensity(
-                                horizontal: -0.4,
-                                vertical: -0.4,
-                              ),
-                              value: selected,
-                              onChanged: (_) {
-                                _toggleOfficeLocationSelection(bloc, officeId);
-                              },
-                            ),
-                            Expanded(
-                              child: Text(
-                                officeName,
-                                style: AppFonts.regular(
-                                  14,
-                                  AppColors.primaryText,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-          ),
-        ],
-        if ((ready.officeLocationsErrorMessage ?? '').trim().isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(
-            ready.officeLocationsErrorMessage!.trim(),
-            style: AppFonts.regular(12, AppColors.error),
-          ),
-        ],
-        if ((_officeLocationValidationError ?? '').trim().isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(
-            _officeLocationValidationError!,
-            style: AppFonts.regular(12, AppColors.error),
-          ),
-        ],
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final double width = math.min(MediaQuery.sizeOf(context).width * 0.88, 520);
@@ -454,129 +283,188 @@ class _PersonalSettingsEditPanelState extends State<PersonalSettingsEditPanel> {
 
     return SizedBox(
       width: width,
-      child: Material(
+      child: ColoredBox(
         color: AppColors.white,
-        child: SafeArea(
-          child: BlocBuilder<SettingsBloc, SettingsState>(
-            buildWhen: (SettingsState previous, SettingsState current) {
-              return current is SettingsReady || current is SettingsLoggingOut;
-            },
-            builder: (BuildContext context, SettingsState state) {
-              final SettingsReady? ready = switch (state) {
-                SettingsReady() => state,
-                SettingsLoggingOut(:final user) => SettingsReady(user: user!),
-                _ => null,
-              };
-              if (ready == null) {
-                return const SizedBox.shrink();
-              }
-              return Column(
-                children: <Widget>[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: AppColors.drawerItemSelected,
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            AppStrings.settingsPersonalSettingDialogTitle,
-                            style: AppFonts.medium(14, AppColors.white),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => AppRouter.pop(context),
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(
-                            Icons.close,
-                            color: AppColors.white,
-                            size: 18,
-                          ),
-                          tooltip: AppStrings.settingsCloseEditPanel,
-                        ),
-                      ],
-                    ),
+        child: BlocBuilder<SettingsBloc, SettingsState>(
+          buildWhen: (SettingsState previous, SettingsState current) {
+            return current is SettingsReady || current is SettingsLoggingOut;
+          },
+          builder: (BuildContext context, SettingsState state) {
+            final SettingsReady? ready = switch (state) {
+              SettingsReady() => state,
+              SettingsLoggingOut(:final user) => SettingsReady(user: user!),
+              _ => null,
+            };
+            if (ready == null) {
+              return const SizedBox.shrink();
+            }
+            return Column(
+              children: <Widget>[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    top: MediaQuery.paddingOf(context).top,
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            const SettingsSectionTitle(
-                              title:
-                                  AppStrings.settingsPersonalInformationTitle,
-                            ),
-                            const SizedBox(height: _fieldGap),
-                            _twoColumnRow(
-                              _fullWidthField(
-                                AppStrings.settingsFirstNameLabel,
-                                CommonTextFormField(
-                                  controller: _firstNameController,
-                                  fillColor: AppColors.white,
-                                  hintText: AppStrings.settingsHintFirstName,
-                                  keyboardType: TextInputType.name,
-                                  textInputAction: TextInputAction.next,
-                                  style: AppFonts.regular(
-                                    14,
-                                    AppColors.primaryText,
-                                  ),
-                                  borderRadius: 10,
-                                  focusedBorderColor:
-                                      AppColors.splashBackground,
-                                  validator: (String? v) {
-                                    if ((v ?? '').trim().isEmpty) {
-                                      return AppStrings
-                                          .settingsFirstNameRequired;
-                                    }
-                                    return null;
-                                  },
+                  color: AppColors.drawerItemSelected,
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          AppStrings.settingsPersonalSettingDialogTitle,
+                          style: AppFonts.medium(14, AppColors.white),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => AppRouter.pop(context),
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(
+                          Icons.close,
+                          color: AppColors.white,
+                          size: 22,
+                        ),
+                        tooltip: AppStrings.settingsCloseEditPanel,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          EditPanelAvatar(
+                            initialImageUrl: widget.baseUser.profileImage,
+                            onImageChanged: _onImageChanged,
+                          ),
+                          const SizedBox(height: _sectionGap),
+                          const SettingsSectionTitle(
+                            title: AppStrings.settingsPersonalInformationTitle,
+                          ),
+                          const SizedBox(height: _fieldGap),
+                          _twoColumnRow(
+                            _fullWidthField(
+                              AppStrings.settingsFirstNameLabel,
+                              CommonTextFormField(
+                                controller: _firstNameController,
+                                fillColor: AppColors.white,
+                                hintText: AppStrings.settingsHintFirstName,
+                                keyboardType: TextInputType.name,
+                                textInputAction: TextInputAction.next,
+                                style: AppFonts.regular(
+                                  14,
+                                  AppColors.primaryText,
                                 ),
-                              ),
-                              _fullWidthField(
-                                AppStrings.settingsLastNameLabel,
-                                CommonTextFormField(
-                                  controller: _lastNameController,
-                                  fillColor: AppColors.white,
-                                  hintText: AppStrings.settingsHintLastName,
-                                  keyboardType: TextInputType.name,
-                                  textInputAction: TextInputAction.next,
-                                  style: AppFonts.regular(
-                                    14,
-                                    AppColors.primaryText,
-                                  ),
-                                  borderRadius: 10,
-                                  focusedBorderColor:
-                                      AppColors.splashBackground,
-                                  validator: (String? v) {
-                                    if ((v ?? '').trim().isEmpty) {
-                                      return AppStrings
-                                          .settingsLastNameRequired;
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                borderRadius: 10,
+                                focusedBorderColor: AppColors.splashBackground,
+                                validator: (String? v) {
+                                  if ((v ?? '').trim().isEmpty) {
+                                    return AppStrings.settingsFirstNameRequired;
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
+                            _fullWidthField(
+                              AppStrings.settingsLastNameLabel,
+                              CommonTextFormField(
+                                controller: _lastNameController,
+                                fillColor: AppColors.white,
+                                hintText: AppStrings.settingsHintLastName,
+                                keyboardType: TextInputType.name,
+                                textInputAction: TextInputAction.next,
+                                style: AppFonts.regular(
+                                  14,
+                                  AppColors.primaryText,
+                                ),
+                                borderRadius: 10,
+                                focusedBorderColor: AppColors.splashBackground,
+                                validator: (String? v) {
+                                  if ((v ?? '').trim().isEmpty) {
+                                    return AppStrings.settingsLastNameRequired;
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: _sectionGap),
+                          const SettingsSectionTitle(
+                            title: AppStrings.settingsContactTitle,
+                          ),
+                          const SizedBox(height: _fieldGap),
+                          _twoColumnRow(
+                            _fullWidthField(
+                              AppStrings.settingsEmailIdLabel,
+                              CommonTextFormField(
+                                controller: _emailController,
+                                fillColor: AppColors.white,
+                                hintText: AppStrings.settingsHintEmail,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                style: AppFonts.regular(
+                                  14,
+                                  AppColors.primaryText,
+                                ),
+                                borderRadius: 10,
+                                focusedBorderColor: AppColors.splashBackground,
+                                validator: validateLoginEmail,
+                              ),
+                            ),
+                            _fullWidthField(
+                              AppStrings.settingsPhoneNumberLabel,
+                              CommonTextFormField(
+                                controller: _phoneController,
+                                fillColor: AppColors.white,
+                                hintText: AppStrings.settingsHintPhone,
+                                keyboardType: TextInputType.phone,
+                                textInputAction: TextInputAction.next,
+                                inputFormatters: <TextInputFormatter>[
+                                  _phoneMask,
+                                ],
+                                style: AppFonts.regular(
+                                  14,
+                                  AppColors.primaryText,
+                                ),
+                                borderRadius: 10,
+                                focusedBorderColor: AppColors.splashBackground,
+                                validator: (String? value) {
+                                  final String digits = (value ?? '')
+                                      .replaceAll(RegExp(r'\D'), '');
+                                  if (digits.length != 11) {
+                                    return AppStrings.settingsPhoneRequired;
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: _fieldGap),
+                          _fullWidthField(
+                            AppStrings.settingsOfficeLocationLabel,
+                            EditPanelOfficeSelector(
+                              ready: ready,
+                              validationError: _officeLocationValidationError,
+                              onClearError: _clearOfficeLocationError,
+                            ),
+                          ),
+                          if (widget.isDoctor) ...<Widget>[
                             const SizedBox(height: _sectionGap),
                             const SettingsSectionTitle(
-                              title: AppStrings.settingsContactTitle,
+                              title:
+                                  AppStrings.settingsPractitionerDetailsTitle,
                             ),
                             const SizedBox(height: _fieldGap),
                             _twoColumnRow(
                               _fullWidthField(
-                                AppStrings.settingsEmailIdLabel,
+                                AppStrings.settingsTitleLabel,
                                 CommonTextFormField(
-                                  controller: _emailController,
+                                  controller: _titleController,
                                   fillColor: AppColors.white,
-                                  hintText: AppStrings.settingsHintEmail,
-                                  keyboardType: TextInputType.emailAddress,
+                                  hintText: AppStrings.settingsHintTitle,
                                   textInputAction: TextInputAction.next,
                                   style: AppFonts.regular(
                                     14,
@@ -585,20 +473,15 @@ class _PersonalSettingsEditPanelState extends State<PersonalSettingsEditPanel> {
                                   borderRadius: 10,
                                   focusedBorderColor:
                                       AppColors.splashBackground,
-                                  validator: validateLoginEmail,
                                 ),
                               ),
                               _fullWidthField(
-                                AppStrings.settingsPhoneNumberLabel,
+                                AppStrings.settingsDegreeLabel,
                                 CommonTextFormField(
-                                  controller: _phoneController,
+                                  controller: _degreeController,
                                   fillColor: AppColors.white,
-                                  hintText: AppStrings.settingsHintPhone,
-                                  keyboardType: TextInputType.phone,
+                                  hintText: AppStrings.settingsHintDegree,
                                   textInputAction: TextInputAction.next,
-                                  inputFormatters: <TextInputFormatter>[
-                                    _phoneMask,
-                                  ],
                                   style: AppFonts.regular(
                                     14,
                                     AppColors.primaryText,
@@ -606,202 +489,147 @@ class _PersonalSettingsEditPanelState extends State<PersonalSettingsEditPanel> {
                                   borderRadius: 10,
                                   focusedBorderColor:
                                       AppColors.splashBackground,
-                                  validator: (String? value) {
-                                    final String digits = (value ?? '')
-                                        .replaceAll(RegExp(r'\D'), '');
-                                    if (digits.length != 11) {
-                                      return AppStrings.settingsPhoneRequired;
-                                    }
-                                    return null;
-                                  },
                                 ),
                               ),
                             ),
                             const SizedBox(height: _fieldGap),
-                            _fullWidthField(
-                              AppStrings.settingsOfficeLocationLabel,
-                              _officeLocationDropdown(ready),
+                            _twoColumnRow(
+                              _fullWidthField(
+                                AppStrings.settingsMedicalLicenseNumberLabel,
+                                CommonTextFormField(
+                                  controller: _medicalLicenseController,
+                                  fillColor: AppColors.white,
+                                  hintText:
+                                      AppStrings.settingsHintMedicalLicense,
+                                  textInputAction: TextInputAction.next,
+                                  style: AppFonts.regular(
+                                    14,
+                                    AppColors.primaryText,
+                                  ),
+                                  borderRadius: 10,
+                                  focusedBorderColor:
+                                      AppColors.splashBackground,
+                                ),
+                              ),
+                              _fullWidthField(
+                                AppStrings.settingsLicenseExpiryDateLabel,
+                                CommonTextFormField(
+                                  controller: _licenseController,
+                                  fillColor: AppColors.white,
+                                  focusNode: _licenseFocus,
+                                  readOnly: true,
+                                  onTap: _pickLicenseDate,
+                                  hintText:
+                                      AppStrings.settingsHintLicenseExpiry,
+                                  style: AppFonts.regular(
+                                    14,
+                                    AppColors.primaryText,
+                                  ),
+                                  borderRadius: 10,
+                                  focusedBorderColor:
+                                      AppColors.splashBackground,
+                                  suffixIcon: calendarSuffix,
+                                ),
+                              ),
                             ),
-                            if (widget.isDoctor) ...<Widget>[
-                              const SizedBox(height: _sectionGap),
-                              const SettingsSectionTitle(
-                                title:
-                                    AppStrings.settingsPractitionerDetailsTitle,
-                              ),
-                              const SizedBox(height: _fieldGap),
-                              _twoColumnRow(
-                                _fullWidthField(
-                                  AppStrings.settingsTitleLabel,
-                                  CommonTextFormField(
-                                    controller: _titleController,
-                                    fillColor: AppColors.white,
-                                    hintText: AppStrings.settingsHintTitle,
-                                    textInputAction: TextInputAction.next,
-                                    style: AppFonts.regular(
-                                      14,
-                                      AppColors.primaryText,
-                                    ),
-                                    borderRadius: 10,
-                                    focusedBorderColor:
-                                        AppColors.splashBackground,
+                            const SizedBox(height: _fieldGap),
+                            _twoColumnRow(
+                              _fullWidthField(
+                                AppStrings
+                                    .settingsNationalProviderIdentifierLabel,
+                                CommonTextFormField(
+                                  controller: _npiController,
+                                  fillColor: AppColors.white,
+                                  hintText: AppStrings.settingsHintNpi,
+                                  textInputAction: TextInputAction.next,
+                                  style: AppFonts.regular(
+                                    14,
+                                    AppColors.primaryText,
                                   ),
-                                ),
-                                _fullWidthField(
-                                  AppStrings.settingsDegreeLabel,
-                                  CommonTextFormField(
-                                    controller: _degreeController,
-                                    fillColor: AppColors.white,
-                                    hintText: AppStrings.settingsHintDegree,
-                                    textInputAction: TextInputAction.next,
-                                    style: AppFonts.regular(
-                                      14,
-                                      AppColors.primaryText,
-                                    ),
-                                    borderRadius: 10,
-                                    focusedBorderColor:
-                                        AppColors.splashBackground,
-                                  ),
+                                  borderRadius: 10,
+                                  focusedBorderColor:
+                                      AppColors.splashBackground,
                                 ),
                               ),
-                              const SizedBox(height: _fieldGap),
-                              _twoColumnRow(
-                                _fullWidthField(
-                                  AppStrings.settingsMedicalLicenseNumberLabel,
-                                  CommonTextFormField(
-                                    controller: _medicalLicenseController,
-                                    fillColor: AppColors.white,
-                                    hintText:
-                                        AppStrings.settingsHintMedicalLicense,
-                                    textInputAction: TextInputAction.next,
-                                    style: AppFonts.regular(
-                                      14,
-                                      AppColors.primaryText,
-                                    ),
-                                    borderRadius: 10,
-                                    focusedBorderColor:
-                                        AppColors.splashBackground,
+                              _fullWidthField(
+                                AppStrings.settingsTaxonomyCodeLabel,
+                                CommonTextFormField(
+                                  controller: _taxonomyController,
+                                  fillColor: AppColors.white,
+                                  hintText: AppStrings.settingsHintTaxonomy,
+                                  textInputAction: TextInputAction.next,
+                                  style: AppFonts.regular(
+                                    14,
+                                    AppColors.primaryText,
                                   ),
-                                ),
-                                _fullWidthField(
-                                  AppStrings.settingsLicenseExpiryDateLabel,
-                                  CommonTextFormField(
-                                    controller: _licenseController,
-                                    fillColor: AppColors.white,
-                                    focusNode: _licenseFocus,
-                                    readOnly: true,
-                                    onTap: _pickLicenseDate,
-                                    hintText:
-                                        AppStrings.settingsHintLicenseExpiry,
-                                    style: AppFonts.regular(
-                                      14,
-                                      AppColors.primaryText,
-                                    ),
-                                    borderRadius: 10,
-                                    focusedBorderColor:
-                                        AppColors.splashBackground,
-                                    suffixIcon: calendarSuffix,
-                                  ),
+                                  borderRadius: 10,
+                                  focusedBorderColor:
+                                      AppColors.splashBackground,
                                 ),
                               ),
-                              const SizedBox(height: _fieldGap),
-                              _twoColumnRow(
-                                _fullWidthField(
-                                  AppStrings
-                                      .settingsNationalProviderIdentifierLabel,
-                                  CommonTextFormField(
-                                    controller: _npiController,
-                                    fillColor: AppColors.white,
-                                    hintText: AppStrings.settingsHintNpi,
-                                    textInputAction: TextInputAction.next,
-                                    style: AppFonts.regular(
-                                      14,
-                                      AppColors.primaryText,
-                                    ),
-                                    borderRadius: 10,
-                                    focusedBorderColor:
-                                        AppColors.splashBackground,
+                            ),
+                            const SizedBox(height: _fieldGap),
+                            _twoColumnRow(
+                              _fullWidthField(
+                                AppStrings.settingsSpecializationLabel,
+                                CommonTextFormField(
+                                  controller: _specializationController,
+                                  fillColor: AppColors.white,
+                                  hintText:
+                                      AppStrings.settingsHintSpecialization,
+                                  textInputAction: TextInputAction.done,
+                                  style: AppFonts.regular(
+                                    14,
+                                    AppColors.primaryText,
                                   ),
-                                ),
-                                _fullWidthField(
-                                  AppStrings.settingsTaxonomyCodeLabel,
-                                  CommonTextFormField(
-                                    controller: _taxonomyController,
-                                    fillColor: AppColors.white,
-                                    hintText: AppStrings.settingsHintTaxonomy,
-                                    textInputAction: TextInputAction.next,
-                                    style: AppFonts.regular(
-                                      14,
-                                      AppColors.primaryText,
-                                    ),
-                                    borderRadius: 10,
-                                    focusedBorderColor:
-                                        AppColors.splashBackground,
-                                  ),
+                                  borderRadius: 10,
+                                  focusedBorderColor:
+                                      AppColors.splashBackground,
                                 ),
                               ),
-                              const SizedBox(height: _fieldGap),
-                              _twoColumnRow(
-                                _fullWidthField(
-                                  AppStrings.settingsSpecializationLabel,
-                                  CommonTextFormField(
-                                    controller: _specializationController,
-                                    fillColor: AppColors.white,
-                                    hintText:
-                                        AppStrings.settingsHintSpecialization,
-                                    textInputAction: TextInputAction.done,
-                                    style: AppFonts.regular(
-                                      14,
-                                      AppColors.primaryText,
-                                    ),
-                                    borderRadius: 10,
-                                    focusedBorderColor:
-                                        AppColors.splashBackground,
-                                  ),
-                                ),
-                                const SizedBox.shrink(),
-                              ),
-                            ],
+                              const SizedBox.shrink(),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        CommonButton(
-                          label: AppStrings.settingsDialogCancel,
-                          height: 40,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          backgroundColor: AppColors.white,
-                          textColor: AppColors.drawerItemSelected,
-                          borderColor: AppColors.drawerItemSelected,
-                          fontWeight: FontWeight.w500,
-                          onPressed: _isSaving
-                              ? null
-                              : () => AppRouter.pop(context),
-                        ),
-                        const SizedBox(width: 12),
-                        CommonButton(
-                          label: AppStrings.settingsDialogSave,
-                          height: 40,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          backgroundColor: AppColors.drawerItemSelected,
-                          textColor: AppColors.white,
-                          borderColor: AppColors.drawerItemSelected,
-                          fontWeight: FontWeight.w500,
-                          isLoading: _isSaving,
-                          onPressed: _isSaving ? null : () => _submit(ready),
-                        ),
-                      ],
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      CommonButton(
+                        label: AppStrings.settingsDialogCancel,
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        backgroundColor: AppColors.white,
+                        textColor: AppColors.drawerItemSelected,
+                        borderColor: AppColors.drawerItemSelected,
+                        fontWeight: FontWeight.w500,
+                        onPressed: _isSaving
+                            ? null
+                            : () => AppRouter.pop(context),
+                      ),
+                      const SizedBox(width: 12),
+                      CommonButton(
+                        label: AppStrings.settingsDialogSave,
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        backgroundColor: AppColors.drawerItemSelected,
+                        textColor: AppColors.white,
+                        borderColor: AppColors.drawerItemSelected,
+                        fontWeight: FontWeight.w500,
+                        isLoading: _isSaving,
+                        onPressed: _isSaving ? null : () => _submit(ready),
+                      ),
+                    ],
                   ),
-                ],
-              );
-            },
-          ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

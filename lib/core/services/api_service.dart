@@ -110,6 +110,31 @@ class ApiService {
     );
   }
 
+  /// PUT with `multipart/form-data`. Do not set `Content-Type` manually; Dio
+  /// sets the boundary when [data] is [FormData].
+  Future<dynamic> putMultipart(
+    String path, {
+    required FormData data,
+    Map<String, dynamic>? queryParameters,
+    String? bearerToken,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    final Map<String, String> headers = await _buildHeaders(
+      bearerToken: bearerToken,
+      includeJsonContentType: false,
+    );
+    return _execute(
+      () => _dio.put(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        cancelToken: cancelToken,
+        options: _mergeOptions(options, headers: headers),
+      ),
+    );
+  }
+
   Future<dynamic> delete(
     String path, {
     dynamic body,
@@ -144,17 +169,22 @@ class ApiService {
     return options.copyWith(headers: mergedHeaders);
   }
 
-  Future<Map<String, String>> _buildHeaders({String? bearerToken}) async {
+  Future<Map<String, String>> _buildHeaders({
+    String? bearerToken,
+    bool includeJsonContentType = true,
+  }) async {
     final Map<String, String> deviceInfo =
         await DeviceInfoService.getDeviceInfoAsJson();
     final String timezone = await _getCurrentTimezone();
 
     final Map<String, String> headers = <String, String>{
       'accept': '*/*',
-      'Content-Type': 'application/json',
       'x-device-info': jsonEncode(deviceInfo),
       'x-timezone': timezone,
     };
+    if (includeJsonContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     final String? token = bearerToken?.trim();
     if (token != null && token.isNotEmpty) {

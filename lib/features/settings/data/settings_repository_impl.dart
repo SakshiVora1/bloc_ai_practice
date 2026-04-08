@@ -5,6 +5,7 @@ import 'package:subqdocs_bloc/core/services/app_preferences.dart';
 import 'package:subqdocs_bloc/data/models/current_user_response.dart';
 import 'package:subqdocs_bloc/data/models/login_model.dart';
 import 'package:subqdocs_bloc/features/settings/data/models/settings_office_location_response.dart';
+import 'package:subqdocs_bloc/features/settings/data/settings_user_update_form_data.dart';
 import 'package:subqdocs_bloc/features/settings/data/settings_user_update_payload.dart';
 import 'package:subqdocs_bloc/features/settings/domain/repositories/settings_repository.dart';
 
@@ -40,17 +41,36 @@ final class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<CurrentUserResponse> updateCurrentUser(User user) async {
+  Future<CurrentUserResponse> updateCurrentUser(
+    User user, {
+    String? profileImageFilePath,
+    bool deleteProfileImage = false,
+  }) async {
     final String? bearer = await _sessionBearerToken();
     if (bearer == null || bearer.isEmpty) {
       throw const UnauthorizedApiException(message: 'No active session');
     }
 
-    final dynamic data = await _apiService.put(
-      userPath,
-      bearerToken: bearer,
-      body: settingsUserUpdateRequestBody(user),
-    );
+    final bool useMultipart =
+        deleteProfileImage ||
+        (profileImageFilePath != null &&
+            profileImageFilePath.trim().isNotEmpty);
+
+    final dynamic data = useMultipart
+        ? await _apiService.putMultipart(
+            userPath,
+            bearerToken: bearer,
+            data: await buildSettingsUserUpdateFormData(
+              user: user,
+              profileImageFilePath: profileImageFilePath,
+              deleteProfileImage: deleteProfileImage,
+            ),
+          )
+        : await _apiService.put(
+            userPath,
+            bearerToken: bearer,
+            body: settingsUserUpdateRequestBody(user),
+          );
     if (data is! Map) {
       throw const ParseApiException(
         message: 'User update API returned non-object response',

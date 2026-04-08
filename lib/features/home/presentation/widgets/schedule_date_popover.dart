@@ -141,32 +141,22 @@ class _ScheduleDatePopoverCardState extends State<_ScheduleDatePopoverCard> {
     return ValueListenableBuilder<List<DateTime?>>(
       valueListenable: _rangeValues,
       builder: (BuildContext context, List<DateTime?> values, Widget? child) {
-        final double availableWidth = MediaQuery.sizeOf(context).width - 24;
-        final double maxWidth = math.min(availableWidth, 280);
         final List<DateTime?> pickerValue = <DateTime?>[
           values.first,
           values.length > 1 ? values[1] : null,
         ];
 
         return Material(
-          elevation: 6,
-          shadowColor: Colors.black12,
           color: AppColors.white,
           borderRadius: BorderRadius.circular(12),
           clipBehavior: Clip.antiAlias,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: 220, maxWidth: maxWidth),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: SizedBox(
-                height: 300,
-                width: 500,
-                child: CalendarDatePicker2(
-                  config: _pickerConfig(),
-                  value: pickerValue,
-                  onValueChanged: _onCalendarValuesChanged,
-                ),
-              ),
+          child: SizedBox(
+            height: 300,
+            width: 500,
+            child: CalendarDatePicker2(
+              config: _pickerConfig(),
+              value: pickerValue,
+              onValueChanged: _onCalendarValuesChanged,
             ),
           ),
         );

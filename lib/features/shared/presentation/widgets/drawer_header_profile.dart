@@ -16,7 +16,7 @@ class DrawerHeaderProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return ColoredBox(
       color: AppColors.white,
       child: SafeArea(
         bottom: false,

@@ -176,6 +176,10 @@ class _LabelRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (label.isEmpty && icon != null) {
+      return icon!;
+    }
+
     final Widget text = Text(
       label,
       style: labelStyle,

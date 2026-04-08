@@ -20,9 +20,19 @@ final class SettingsDeleteAccountPressed extends SettingsEvent {
 }
 
 final class SettingsProfileSaveRequested extends SettingsEvent {
-  const SettingsProfileSaveRequested({required this.user});
+  const SettingsProfileSaveRequested({
+    required this.user,
+    this.profileImageFilePath,
+    this.deleteProfileImage = false,
+  });
 
   final User user;
+
+  /// Local path of a newly picked image; included as multipart `user_image`.
+  final String? profileImageFilePath;
+
+  /// When true, sends `isDeleteProfileImage` without a file.
+  final bool deleteProfileImage;
 }
 
 final class SettingsEditPanelOpened extends SettingsEvent {

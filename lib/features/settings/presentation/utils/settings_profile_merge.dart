@@ -57,6 +57,8 @@ User mergeUserFromProfileForm(
   String? specialization,
   required List<int> officeLocationIds,
   required List<OfficeLocation> officeLocations,
+  bool applyProfileImageOverride = false,
+  String? profileImage,
 }) {
   final dynamic licenseValue = !isDoctor
       ? base.licenseExpiryDate
@@ -73,7 +75,7 @@ User mergeUserFromProfileForm(
     token: base.token,
     organizationId: base.organizationId,
     secret2Fa: base.secret2Fa,
-    profileImage: base.profileImage,
+    profileImage: applyProfileImageOverride ? profileImage : base.profileImage,
     degree: isDoctor ? _emptyToNull(degree) : base.degree,
     otp: base.otp,
     pin: base.pin,
@@ -130,5 +132,77 @@ User mergeUserFromProfileForm(
     officeLocations: officeLocations,
     organizationName: base.organizationName,
     subscriptionPeriod: base.subscriptionPeriod,
+  );
+}
+
+/// Prefer server-returned profile image URL and token after a successful save.
+User mergeUserAfterProfileSave(User submitted, User? server) {
+  if (server == null) {
+    return submitted;
+  }
+  final String trimmedToken = server.token?.trim() ?? '';
+  final String? nextToken = trimmedToken.isNotEmpty
+      ? trimmedToken
+      : submitted.token;
+  return User(
+    thirdPartyId: submitted.thirdPartyId,
+    id: submitted.id,
+    email: submitted.email,
+    firstName: submitted.firstName,
+    lastName: submitted.lastName,
+    token: nextToken,
+    organizationId: submitted.organizationId,
+    secret2Fa: submitted.secret2Fa,
+    profileImage: server.profileImage ?? submitted.profileImage,
+    degree: submitted.degree,
+    otp: submitted.otp,
+    pin: submitted.pin,
+    otpToken: submitted.otpToken,
+    otpGeneratedAt: submitted.otpGeneratedAt,
+    lastLoginDate: submitted.lastLoginDate,
+    hasAcceptedTerms: submitted.hasAcceptedTerms,
+    updateInTerms: submitted.updateInTerms,
+    termsUpdatedAt: submitted.termsUpdatedAt,
+    isAdmin: submitted.isAdmin,
+    role: submitted.role,
+    status: submitted.status,
+    contactNo: submitted.contactNo,
+    country: submitted.country,
+    state: submitted.state,
+    stateCode: submitted.stateCode,
+    city: submitted.city,
+    streetName: submitted.streetName,
+    postalCode: submitted.postalCode,
+    title: submitted.title,
+    medicalLicenseNumber: submitted.medicalLicenseNumber,
+    licenseExpiryDate: submitted.licenseExpiryDate,
+    nationalProviderIdentifier: submitted.nationalProviderIdentifier,
+    taxonomyCode: submitted.taxonomyCode,
+    specialization: submitted.specialization,
+    uploadedAt: submitted.uploadedAt,
+    invitationToken: submitted.invitationToken,
+    suspended: submitted.suspended,
+    secondaryEmail: submitted.secondaryEmail,
+    dataSource: submitted.dataSource,
+    thirdPartySyncDate: submitted.thirdPartySyncDate,
+    thirdPartyLastUpdated: submitted.thirdPartyLastUpdated,
+    optumObjectId: submitted.optumObjectId,
+    optumUsername: submitted.optumUsername,
+    optumPassword: submitted.optumPassword,
+    optumDae: submitted.optumDae,
+    optumNpi: submitted.optumNpi,
+    optumUpin: submitted.optumUpin,
+    optumCanRefill: submitted.optumCanRefill,
+    isMultiLanguagePreference: submitted.isMultiLanguagePreference,
+    isHidden: submitted.isHidden,
+    isUnsubscribed: submitted.isUnsubscribed,
+    guidedTour: submitted.guidedTour,
+    createdAt: submitted.createdAt,
+    updatedAt: submitted.updatedAt,
+    deletedAt: submitted.deletedAt,
+    officeLocationIds: submitted.officeLocationIds,
+    officeLocations: submitted.officeLocations,
+    organizationName: submitted.organizationName,
+    subscriptionPeriod: submitted.subscriptionPeriod,
   );
 }

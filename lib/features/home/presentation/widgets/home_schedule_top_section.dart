@@ -37,59 +37,8 @@ class _HomeScheduleTopSectionState extends State<HomeScheduleTopSection> {
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: <Widget>[
-                        SearchBarWidget(
-                          hintText: AppStrings.homeScheduleSearchHint,
-                          onChanged: (String q) => context
-                              .read<HomeScreenBloc>()
-                              .add(HomeScreenSearchQueryChanged(q)),
-                        ),
-                        const SizedBox(width: 8),
-                        CommonButton(
-                          label: AppStrings.homeScheduleFilter,
-                          height: 40,
-                          borderRadius: 6,
-                          backgroundColor: AppColors.white,
-                          textColor: AppColors.primaryText,
-                          borderColor: AppColors.fieldBorder,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          elevation: 0,
-                          onPressed: () => context.read<HomeScreenBloc>().add(
-                            const HomeScreenFilterPanelOpened(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        CommonButton(
-                          label: AppStrings.homeScheduleVisit,
-                          height: 40,
-                          borderRadius: 6,
-                          backgroundColor: AppColors.scheduleVisitAccent,
-                          textColor: AppColors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          elevation: 0,
-                          icon: SvgPicture.asset(
-                            AppAssets.calendarWhite,
-                            width: 20,
-                            height: 20,
-                          ),
-                          onPressed: () => context.read<HomeScreenBloc>().add(
-                            const HomeScreenScheduleVisitOpened(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 DateSelectorWidget(
                   displayLabel: scheduleState.displayLabel,
                   onPrevious: () => context.read<HomeScreenBloc>().add(
@@ -98,19 +47,80 @@ class _HomeScheduleTopSectionState extends State<HomeScheduleTopSection> {
                   onNext: () => context.read<HomeScreenBloc>().add(
                     const HomeScreenDateForward(),
                   ),
-                  onCenterTap: () {
-                    showScheduleDatePopover(
-                      context: context,
-                      initialStart: scheduleState.startDate ?? DateTime.now(),
-                      initialEnd: scheduleState.endDate,
-                      onCommitted: (DateTime start, DateTime? end) {
-                        context.read<HomeScreenBloc>().add(
-                          HomeScreenDateSelected(start: start, end: end),
-                        );
-                      },
-                    );
-                  },
+                  centerWidget: PopupMenuButton<void>(
+                    offset: const Offset(0, 6),
+                    position: PopupMenuPosition.under,
+                    tooltip: "",
+                    elevation: 12,
+                    color: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<void>>[
+                      buildScheduleDatePopupMenuEntry(
+                        initialStart: scheduleState.startDate ?? DateTime.now(),
+                        initialEnd: scheduleState.endDate,
+                        onCommitted: (DateTime start, DateTime? end) {
+                          context.read<HomeScreenBloc>().add(
+                            HomeScreenDateSelected(start: start, end: end),
+                          );
+                        },
+                      ),
+                    ],
+                    child: DatePill(label: scheduleState.displayLabel),
+                  ),
                 ),
+                Row(
+                  children: <Widget>[
+                    SearchBarWidget(
+                      hintText: AppStrings.homeScheduleSearchHint,
+                      onChanged: (String q) => context
+                          .read<HomeScreenBloc>()
+                          .add(HomeScreenSearchQueryChanged(q)),
+                    ),
+                    const SizedBox(width: 8),
+                    CommonButton(
+                      label: "",
+                      height: 40,
+                      borderRadius: 6,
+                      icon: SvgPicture.asset(
+                        AppAssets.filterLogo,
+                        width: 20,
+                        height: 20,
+                      ),
+                      backgroundColor: AppColors.white,
+                      borderColor: AppColors.fieldBorder,
+                      padding:  EdgeInsets.all(10),
+                      elevation: 0,
+                      onPressed: () => context.read<HomeScreenBloc>().add(
+                        const HomeScreenFilterPanelOpened(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    CommonButton(
+                      label: AppStrings.homeScheduleVisit,
+                      height: 40,
+                      borderRadius: 6,
+                      backgroundColor: AppColors.scheduleVisitAccent,
+                      textColor: AppColors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      elevation: 0,
+                      icon: SvgPicture.asset(
+                        AppAssets.calendarWhite,
+                        width: 20,
+                        height: 20,
+                      ),
+                      onPressed: () => context.read<HomeScreenBloc>().add(
+                        const HomeScreenScheduleVisitOpened(),
+                      ),
+                    ),
+                  ],
+                ),
+
+
               ],
             ),
           ],

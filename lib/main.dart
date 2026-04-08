@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:toastification/toastification.dart';
 import 'package:subqdocs_bloc/core/config/app_config.dart';
 import 'package:subqdocs_bloc/core/theme/app_theme.dart';
 import 'package:subqdocs_bloc/core/models/session_user_info.dart';
@@ -24,13 +25,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SubQ Docs',
-      navigatorKey: RootNavigatorKey.instance,
-      theme: AppTheme.light(),
-      debugShowCheckedModeBanner: false,
-      initialRoute: RouteNames.splashScreen,
-      routes: AppRoutes.routes,
+    return ToastificationWrapper(
+      child: MaterialApp(
+        title: 'SubQ Docs',
+        navigatorKey: RootNavigatorKey.instance,
+        theme: AppTheme.light(),
+        debugShowCheckedModeBanner: false,
+        initialRoute: RouteNames.splashScreen,
+        routes: AppRoutes.routes,
+      ),
     );
   }
 }

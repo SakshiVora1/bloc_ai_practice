@@ -1,0 +1,13 @@
+## Avoid unnecessary Material widgets
+
+- You do not have to use a `Material` widget by default; use lightweight widgets like `Container`, `ColoredBox`, `SizedBox`, `DecoratedBox`, `Padding`, or `Align` when Material behavior is not needed.
+- Use `Material` only when at least one Material-specific behavior is required:
+  - ink reactions (`InkWell`, `InkResponse`, `Ink`),
+  - elevation / shadows from `Material`,
+  - `shape`/`borderRadius`/`clipBehavior` semantics that rely on `Material`,
+  - explicit canvas/type behavior needed by descendants.
+- Do not wrap content in `Material(color: Colors.transparent)` by default; use plain layout widgets unless it is required for ink or theme behavior.
+- During refactors, keep behavior unchanged:
+  - if taps/ink ripple/focus visuals depend on `Material`, keep it;
+  - otherwise replace redundant wrappers with simpler widgets.
+- For overlay entries and simple containers, default to non-`Material` wrappers first.

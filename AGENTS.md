@@ -165,6 +165,7 @@ For convenience, indexed rule files:
 - `.cursor/rules/model-serialization.mdc`
 - `.cursor/rules/repository-boundaries.mdc`
 - `.cursor/rules/routing-conventions.mdc`
+- `.cursor/rules/avoid-unnecessary-material.mdc`
 
 Effective Dart style is bundled into **`flutter-development.mdc`**; there is no separate **`effective-dart.mdc`**.
 

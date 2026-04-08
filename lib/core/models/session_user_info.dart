@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:subqdocs_bloc/core/constants/app_preferences_keys.dart';
 import 'package:subqdocs_bloc/core/services/app_preferences.dart';
+import 'package:subqdocs_bloc/core/services/session_user_cache.dart';
 import 'package:subqdocs_bloc/data/models/login_model.dart';
 
 /// Lightweight profile for app bars and drawer, hydrated from [loginResponse].
@@ -37,6 +38,7 @@ final class SessionUserInfo {
       AppPreferencesKeys.loginResponse,
     );
     _cached = _fromLoginResponseRaw(raw);
+    SessionUserCache.notifyLoginResponseChanged();
   }
 
   /// Clears cached profile (e.g. after logout).

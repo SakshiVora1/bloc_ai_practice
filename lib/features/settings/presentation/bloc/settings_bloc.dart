@@ -8,6 +8,7 @@ import 'package:subqdocs_bloc/data/models/current_user_response.dart';
 import 'package:subqdocs_bloc/data/models/login_model.dart';
 import 'package:subqdocs_bloc/features/settings/data/models/settings_office_location_response.dart';
 import 'package:subqdocs_bloc/features/settings/domain/repositories/settings_repository.dart';
+import 'package:subqdocs_bloc/features/settings/presentation/utils/settings_profile_merge.dart';
 
 part 'settings_event.dart';
 part 'settings_state.dart';
@@ -66,6 +67,24 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     return selectedIds.where(validOptionIds.contains).toList();
   }
 
+  Future<void> _handleError(
+    Object error,
+    Emitter<SettingsState> emit,
+    SettingsState Function(String? message) onFailure,
+  ) async {
+    if (error is UnauthorizedApiException) {
+      await UnauthorizedSessionHandler.handleHttpUnauthorized();
+      if (!isClosed) {
+        emit(const SettingsLoggedOut());
+      }
+      return;
+    }
+    if (isClosed) {
+      return;
+    }
+    emit(onFailure(error is ApiException ? error.message : null));
+  }
+
   Future<void> _onStarted(
     SettingsStarted event,
     Emitter<SettingsState> emit,
@@ -95,24 +114,11 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         return;
       }
       emit(SettingsLoadFailed(message: _fallbackLoadFailure(result.message)));
-    } on ApiException catch (e) {
-      if (e is UnauthorizedApiException) {
-        await UnauthorizedSessionHandler.handleHttpUnauthorized();
-        if (!isClosed) {
-          emit(const SettingsLoggedOut());
-        }
-        return;
-      }
-      if (isClosed) {
-        return;
-      }
-      emit(SettingsLoadFailed(message: _fallbackLoadFailure(e.message)));
-    } catch (_) {
-      if (isClosed) {
-        return;
-      }
-      emit(
-        const SettingsLoadFailed(message: AppStrings.settingsLoadUserFailure),
+    } catch (e) {
+      await _handleError(
+        e,
+        emit,
+        (String? msg) => SettingsLoadFailed(message: _fallbackLoadFailure(msg)),
       );
     }
   }
@@ -126,20 +132,41 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       SettingsProfileSaveFailed(:final user) => user,
       _ => event.user,
     };
+    final SettingsReady? readySnapshot = switch (state) {
+      SettingsReady r => r,
+      _ => null,
+    };
     try {
       final CurrentUserResponse result = await _settingsRepository
-          .updateCurrentUser(event.user);
+          .updateCurrentUser(
+            event.user,
+            profileImageFilePath: event.profileImageFilePath,
+            deleteProfileImage: event.deleteProfileImage,
+          );
       if (isClosed) {
         return;
       }
       if (_isSuccessResponse(result.responseType)) {
-        final String? token = result.responseData?.token?.trim();
-        await _settingsRepository.persistSessionUser(event.user, token: token);
+        final User persisted = mergeUserAfterProfileSave(
+          event.user,
+          result.responseData,
+        );
+        final String? responseToken = result.responseData?.token?.trim();
+        await _settingsRepository.persistSessionUser(
+          persisted,
+          token: (responseToken != null && responseToken.isNotEmpty)
+              ? responseToken
+              : null,
+        );
         await SessionUserInfo.hydrate();
         if (isClosed) {
           return;
         }
-        emit(SettingsReady(user: event.user));
+        if (readySnapshot != null) {
+          emit(readySnapshot.copyWith(user: persisted));
+        } else {
+          emit(SettingsReady(user: persisted));
+        }
         return;
       }
       emit(
@@ -148,31 +175,13 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           message: _fallbackLoadFailure(result.message),
         ),
       );
-    } on ApiException catch (e) {
-      if (e is UnauthorizedApiException) {
-        await UnauthorizedSessionHandler.handleHttpUnauthorized();
-        if (!isClosed) {
-          emit(const SettingsLoggedOut());
-        }
-        return;
-      }
-      if (isClosed) {
-        return;
-      }
-      emit(
-        SettingsProfileSaveFailed(
+    } catch (e) {
+      await _handleError(
+        e,
+        emit,
+        (String? msg) => SettingsProfileSaveFailed(
           user: fallbackUser,
-          message: _fallbackLoadFailure(e.message),
-        ),
-      );
-    } catch (_) {
-      if (isClosed) {
-        return;
-      }
-      emit(
-        SettingsProfileSaveFailed(
-          user: fallbackUser,
-          message: AppStrings.settingsLoadUserFailure,
+          message: _fallbackLoadFailure(msg),
         ),
       );
     }
@@ -233,44 +242,20 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
               : AppStrings.settingsOfficeLocationsLoadFailure,
         ),
       );
-    } on ApiException catch (e) {
-      if (e is UnauthorizedApiException) {
-        await UnauthorizedSessionHandler.handleHttpUnauthorized();
-        if (!isClosed) {
-          emit(const SettingsLoggedOut());
-        }
-        return;
-      }
-      if (isClosed) {
-        return;
-      }
+    } catch (e) {
       final SettingsState maybeLatest = state;
       if (maybeLatest is! SettingsReady) {
         return;
       }
-      emit(
-        maybeLatest.copyWith(
+      await _handleError(e, emit, (String? msg) {
+        final String trimmed = msg?.trim() ?? '';
+        return maybeLatest.copyWith(
           isOfficeLocationsLoading: false,
-          officeLocationsErrorMessage: e.message.trim().isNotEmpty
-              ? e.message.trim()
+          officeLocationsErrorMessage: trimmed.isNotEmpty
+              ? trimmed
               : AppStrings.settingsOfficeLocationsLoadFailure,
-        ),
-      );
-    } catch (_) {
-      if (isClosed) {
-        return;
-      }
-      final SettingsState maybeLatest = state;
-      if (maybeLatest is! SettingsReady) {
-        return;
-      }
-      emit(
-        maybeLatest.copyWith(
-          isOfficeLocationsLoading: false,
-          officeLocationsErrorMessage:
-              AppStrings.settingsOfficeLocationsLoadFailure,
-        ),
-      );
+        );
+      });
     }
   }
 
@@ -394,31 +379,13 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           message: _fallbackLoadFailure(result.message),
         ),
       );
-    } on ApiException catch (e) {
-      if (e is UnauthorizedApiException) {
-        await UnauthorizedSessionHandler.handleHttpUnauthorized();
-        if (!isClosed) {
-          emit(const SettingsLoggedOut());
-        }
-        return;
-      }
-      if (isClosed) {
-        return;
-      }
-      emit(
-        SettingsDeleteAccountFailed(
+    } catch (e) {
+      await _handleError(
+        e,
+        emit,
+        (String? msg) => SettingsDeleteAccountFailed(
           user: user,
-          message: _fallbackLoadFailure(e.message),
-        ),
-      );
-    } catch (_) {
-      if (isClosed) {
-        return;
-      }
-      emit(
-        SettingsDeleteAccountFailed(
-          user: user,
-          message: AppStrings.settingsLoadUserFailure,
+          message: _fallbackLoadFailure(msg),
         ),
       );
     }

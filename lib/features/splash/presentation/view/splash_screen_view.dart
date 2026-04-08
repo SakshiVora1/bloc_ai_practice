@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:subqdocs_bloc/core/constants/app_assets.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
+import 'package:subqdocs_bloc/core/constants/device_breakpoints.dart';
 import 'package:subqdocs_bloc/core/models/session_user_info.dart';
 import 'package:subqdocs_bloc/core/routing/app_router.dart';
 import 'package:subqdocs_bloc/features/splash/presentation/bloc/splash_screen_bloc.dart';
@@ -32,8 +33,8 @@ class _SplashScreenViewState extends State<SplashScreenView> {
 
   @override
   Widget build(BuildContext context) {
-    final MediaQueryData mediaQuery = MediaQuery.of(context);
-    final bool isMobileOrIphone = mediaQuery.size.shortestSide < 600;
+    final Size size = MediaQuery.sizeOf(context);
+    final bool isMobileOrIphone = size.shortestSide < DeviceBreakpoints.mobile;
     final double logoWidthFactor = isMobileOrIphone ? 0.70 : 0.45;
 
     return BlocListener<SplashScreenBloc, SplashScreenState>(
@@ -62,7 +63,7 @@ class _SplashScreenViewState extends State<SplashScreenView> {
         backgroundColor: AppColors.splashBackground,
         body: Center(
           child: SvgPicture.asset(
-            width: mediaQuery.size.width * logoWidthFactor,
+            width: size.width * logoWidthFactor,
             AppAssets.subqdocsWhite,
             fit: BoxFit.contain,
           ),
