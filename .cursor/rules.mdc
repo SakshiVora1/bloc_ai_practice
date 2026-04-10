@@ -3,6 +3,7 @@
 Index of active rule files (each file exists under `.cursor/rules/`):
 
 - `.cursor/rules/bloc-patterns.mdc`
+- `.cursor/rules/error-handling.mdc`
 - `.cursor/rules/environment-urls.mdc`
 - `.cursor/rules/flutter-assets.mdc`
 - `.cursor/rules/flutter-development.mdc`

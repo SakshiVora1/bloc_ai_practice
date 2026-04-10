@@ -6,12 +6,11 @@ Guidance for coding agents in this Flutter repo. **Detail lives in `.cursor/`; t
 
 ## 1. Source of truth (strict order)
 
-| Priority | Location | Role |
-|----------|----------|------|
-| **1** | **`.cursor/rules/`** | **Authoritative.** Start at **`.cursor/rules.mdc`** (index), then each **`.mdc`** file. |
-| **2** | **`.cursor/skills/`** | **Workflows.** When a skill matches the task, follow **`SKILL.md`** for that skill. |
-| **3** | **`AGENTS.md`** (this file) | Summary only. **If anything here conflicts with a rule or skill, follow the rule or skill.** |
-| — | **`docs/`** (e.g. `docs/rules.md`) | Human-readable notes; **does not override** `.cursor/rules/`. |
+| Priority | Location                    | Role                                                                                         |
+|----------|-----------------------------|----------------------------------------------------------------------------------------------|
+| **1**    | **`.cursor/rules/`**        | **Authoritative.** Start at **`.cursor/rules.mdc`** (index), then each **`.mdc`** file.      |
+| **2**    | **`.cursor/skills/`**       | **Workflows.** When a skill matches the task, follow **`SKILL.md`** for that skill.          |
+| **3**    | **`AGENTS.md`** (this file) | Summary only. **If anything here conflicts with a rule or skill, follow the rule or skill.** |
 
 ---
 
@@ -28,7 +27,11 @@ Guidance for coding agents in this Flutter repo. **Detail lives in `.cursor/`; t
 - **Bloc + events only** — do **not** use **Cubit**.
 - Do **not** use **`setState`** for feature state; drive UI via BLoC events and emitted states.
 - One BLoC per feature or cohesive flow; avoid god-blocs.
-- Provide **`BlocProvider`** at the route or feature root.
+- **1 BLoC, 1 screen** → `BlocProvider` in route builder (`app_routes.dart`)
+- **Many BLoCs, 1 screen** → `MultiBlocProvider` in route builder (`app_routes.dart`)
+- **1 BLoC, all screens** → `BlocProvider` in `main.dart` above `MaterialApp`
+- **Many BLoCs, all screens** → `MultiBlocProvider` in `main.dart` above `MaterialApp`
+- Full placement rules and examples → `routing-conventions.mdc`
 
 ### Events and states
 
@@ -158,6 +161,7 @@ When the user asks for a **plan**, **impact analysis**, or **docs**:
 For convenience, indexed rule files:
 
 - `.cursor/rules/bloc-patterns.mdc`
+- `.cursor/rules/error-handling.mdc`
 - `.cursor/rules/environment-urls.mdc`
 - `.cursor/rules/flutter-assets.mdc`
 - `.cursor/rules/flutter-development.mdc`
@@ -167,6 +171,6 @@ For convenience, indexed rule files:
 - `.cursor/rules/routing-conventions.mdc`
 - `.cursor/rules/avoid-unnecessary-material.mdc`
 
-Effective Dart style is bundled into **`flutter-development.mdc`**; there is no separate **`effective-dart.mdc`**.
+Effective Dart style is bundled into **`flutter-development.mdc`**, — **pure index only**, no rules defined here; points to all other rule files; there is no separate **`effective-dart.mdc`**.
 
 **Skills** (narrow workflows only): **`centralized-resources`**, **`flutter-package-install`**, **`prompt-to-docs-plan`**, **`shared-preferences-storage`**, **`device-type-detection`** — each under **`.cursor/skills/<name>/SKILL.md`**. Everything else is covered by **`.cursor/rules/`** and this file.

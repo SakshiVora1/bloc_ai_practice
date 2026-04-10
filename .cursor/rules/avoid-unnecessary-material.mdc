@@ -1,3 +1,8 @@
+---
+description: Avoid unnecessary Material widget wrappers
+alwaysApply: true
+---
+
 ## Avoid unnecessary Material widgets
 
 - You do not have to use a `Material` widget by default; use lightweight widgets like `Container`, `ColoredBox`, `SizedBox`, `DecoratedBox`, `Padding`, or `Align` when Material behavior is not needed.

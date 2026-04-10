@@ -12,29 +12,79 @@ alwaysApply: false
 - `fromJson` and `toJson` must mirror each other exactly (same keys/shape).
 - Use null-safe parsing for all fields.
 - All fields must be nullable unless they are guaranteed by the API/DB contract.
-- No force unwrap (`!`) anywhere in models.
+- No force unwrap (`!`) anywhere in models — including `toJson`.
 - Lists must default to `[]` (never `null`) when parsing.
 - Nested objects must be parsed safely (null-check + safe cast + null-aware construction).
 - No business logic in models (no validation, derived values, formatting, or API calls).
 
 ## JSON Parsing Patterns (required)
 
-- Prefer safe casts:
-  - `json['x'] as String?`
-  - `(json['xs'] as List?)?.cast<String>() ?? []`
-- Nested objects:
-  - `child: (json['child'] as Map<String, dynamic>?) == null ? null : Child.fromJson(json['child'] as Map<String, dynamic>)`
-- Lists of nested objects default to `[]`:
-  - `children: (json['children'] as List?)?.whereType<Map<String, dynamic>>().map(Child.fromJson).toList() ?? []`
+### Primitive fields
+```dart
+name: json['name'] as String?,
+count: json['count'] as int?,
+```
+
+### Nested objects
+```dart
+child: json['child'] == null
+    ? null
+    : Child.fromJson(json['child'] as Map<String, dynamic>),
+```
+
+### Lists of nested objects (default `[]`)
+```dart
+items: List<Item>.from(
+  (json['items'] as List?)?.map((x) => Item.fromJson(x)) ?? [],
+),
+```
+
+### Lists of primitives (default `[]`)
+```dart
+tags: List<String>.from(
+  (json['tags'] as List?)?.map((x) => x as String) ?? [],
+),
+```
+
+> Use `List<X>.from(... ?? [])` with null-safe chaining on the raw list.
+> Never use `!` to unwrap the list. Use `as List?` with `?.map(...)`.
+> `whereType` is not required — this pattern works for both map-based and primitive element types.
+
+## toJson Patterns (required)
+
+### Nullable lists
+```dart
+// List<X>? fields — guard with null-check, never use !
+"items": items == null ? [] : List<dynamic>.from(items!.map((x) => x.toJson())),
+```
+
+### DateTime serialization (null-safe, no !)
+```dart
+// ISO string
+"created_at": createdAt?.toIso8601String(),
+
+// Date-only string (yyyy-MM-dd) — use conditional, not !
+"date": date != null
+    ? "${date.year.toString().padLeft(4, '0')}-"
+      "${date.month.toString().padLeft(2, '0')}-"
+      "${date.day.toString().padLeft(2, '0')}"
+    : null,
+```
+
+## List Nullability
+
+- List fields **may be nullable** (`List<X>?`) when the API may omit the key entirely.
+- `fromJson` always defaults to `[]` when the key is null/absent.
+- `toJson` always guards nullable lists before mapping (see pattern above).
 
 ## Model Placement
 
 - Place app-wide models in `lib/data/models/`.
 - Place feature-only models in `lib/features/{{feature_name}}/data/` or `lib/screens/{{feature_name}}/models/`.
-- DTOs (Data Transfer Objects) belong in the data layer, not in domain or presentation.
+- DTOs belong in the data layer, not in domain or presentation.
 
 ## Immutability
 
-- Prefer **immutable** model classes with `final` fields.
+- Prefer immutable model classes with `final` fields.
 - Implement `copyWith` for models that need to be updated.
 - Do not mutate model instances directly.

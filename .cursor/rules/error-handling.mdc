@@ -1,0 +1,74 @@
+---
+description: Error handling, retry, cancellation, and auth-failure flow
+alwaysApply: true
+---
+
+# Error Handling
+
+## Related rules
+- Toast behavior → `bloc-patterns.mdc`
+- AppStrings constants → `flutter-assets.mdc`
+- Typed failures / repository mapping → `repository-boundaries.mdc`
+- Auth redirect flow → `routing-conventions.mdc`
+
+## Scope of this file
+- `repository-boundaries.mdc` → repository **catches** and **maps** exceptions to typed failures
+- `error-handling.mdc` (this file) → BLoC **handles** those failures, **emits** states, shows toast
+
+## Ownership and flow
+
+- Repository returns **typed results/failures** only (for example `Result<T, Failure>` or equivalent).
+- Repository must not decide UI flow, toast behavior, retries, or navigation.
+- BLoC inspects repository result / `response_type` and emits explicit success or failure states.
+- Never end an async branch without a resolving state emission.
+
+## User-facing error messages
+
+- Use consistent, friendly copy for known failures:
+  - No internet / network unavailable → `Please check internet connection`
+  - Request timeout → `Request timed out. Please try again`
+  - Server unavailable / 5xx → `Server is unavailable. Please try again`
+- Keep these messages centralized in `AppStrings` (reuse existing constants when present).
+- Unknown/unmapped failures should still emit a failure state with a safe fallback message/code.
+
+### Failure to message mapping
+
+| Failure type | AppStrings key (example) | User message | Recoverable |
+|---|---|---|---|
+| `NetworkFailure` | `internetConnectionError` | `Please check internet connection` | Yes |
+| `TimeoutFailure` | `requestTimeoutError` | `Request timed out. Please try again` | Yes |
+| `ServerFailure` (5xx) | `serverUnavailableError` | `Server is unavailable. Please try again` | Yes |
+| `UnauthorizedFailure` | `sessionExpiredError` | `Session expired. Please login again` | No (redirect) |
+| `CancelledFailure` | `requestCancelled` | *(usually hidden from toast)* | N/A |
+| `UnknownFailure` | `genericError` | `Something went wrong. Please try again` | Maybe |
+
+- Keep failure classes typed and mappable so UI copy stays deterministic.
+- If a mapped message key resolves to null/empty, skip toast and only update state.
+
+## Toast behavior
+
+- Show API error feedback via `AppToast.showError(context, message)` from `BlocListener`.
+- If failure message is `null`, empty, or whitespace-only, **do not show a toast**.
+- Do not use `ScaffoldMessenger` / `SnackBar` for API error pattern.
+
+## Retry behavior
+
+- In failure state, expose whether the error is recoverable (`canRetry` or equivalent).
+- Offer retry action for recoverable failures such as:
+  - network/connectivity errors
+  - timeout errors
+  - transient server errors
+- Do not auto-retry by default; user-triggered retry should dispatch a dedicated event.
+
+## Critical failures
+
+- Unauthorized / auth-expired failures are **critical**.
+- On unauthorized state transition, trigger navigation to login from `BlocListener` (not from BLoC directly).
+- Clear session/token as required by existing auth flow before/while redirecting.
+
+## Request cancellation (CancelToken)
+
+- For long-running requests, support cancellation (for example via `CancelToken`).
+- When user leaves screen, closes flow, or a new mutually-exclusive request starts, cancel in-flight request.
+- Map cancellation to a typed cancellation failure/state and avoid showing noisy error toast for user-initiated cancel.
+- Guard `emit` after async calls (`if (isClosed) return;`) so canceled/late callbacks do not update disposed BLoC.

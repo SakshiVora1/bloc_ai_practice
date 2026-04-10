@@ -1,10 +1,11 @@
 ---
 description: Repository layer boundaries with ApiService-only access
-globs: "lib/**/repositories/**/*.dart,lib/**/repository/**/*.dart,lib/core/services/api_service.dart,**/*_bloc.dart"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Repository Layer Boundaries
+
+> For detailed retry policy, user-visible messages, auth redirect behavior, and `CancelToken` guidance, follow **`error-handling.mdc`**.
 
 ## Where Calls Live
 

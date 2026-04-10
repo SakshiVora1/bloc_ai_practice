@@ -9,3 +9,4 @@ alwaysApply: true
 - Prefer reuse over creation
 - Keep naming consistent and meaningful
 - Use `snake_case` for all files
+- Follow rules in ** `bloc-patterns.mdc ` **,** ` repository-boundaries.mdc ` ** , and ** `routing-conventions.mdc` ** for their respective file types

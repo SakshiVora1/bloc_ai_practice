@@ -1,10 +1,11 @@
 ---
 description: BLoC state management patterns and conventions for Flutter
-globs: "**/*_bloc.dart,**/*_event.dart,**/*_state.dart,**/*_view.dart"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # BLoC Patterns
+
+> For standardized failure messages, recoverable retry behavior, unauthorized redirect, and cancellation handling, apply **`error-handling.mdc`**.
 
 - Use one BLoC per feature.
 - **Do not use `Cubit`.** Use **`Bloc<Event, State>`** with explicit events; Cubit is not part of this project's pattern.
@@ -43,6 +44,91 @@ alwaysApply: false
 ## Immutability
 
 - Prefer **immutable** state classes with **`copyWith`** or **new instances** inside the BLoC for business/UI-backed data; avoid parallel mutable "side" fields for the same concerns.
+
+- Use the decision table below to determine the correct widget and placement.
+- For code examples see `routing-conventions.mdc`.
+
+### Decision table
+
+| Situation                        | Widget                | Where                          |
+|----------------------------------|-----------------------|--------------------------------|
+| 1 BLoC, 1 screen                 | `BlocProvider`        | route builder in `app_routes.dart` |
+| Many BLoCs, 1 screen             | `MultiBlocProvider`   | route builder in `app_routes.dart` |
+| 1 BLoC, all screens              | `BlocProvider`        | `main.dart` above `MaterialApp`    |
+| Many BLoCs, all screens          | `MultiBlocProvider`   | `main.dart` above `MaterialApp`    |
+
+### Rules
+
+- Ask one question first: **"Does any screen outside this one need this BLoC?"**
+  - **No** → route builder in `app_routes.dart`
+  - **Yes** → `main.dart` above `MaterialApp`
+- Use `BlocProvider` for a **single** BLoC — never wrap one BLoC in `MultiBlocProvider`.
+- Use `MultiBlocProvider` only when **two or more** BLoCs are provided at the same level.
+- Never place the same BLoC in both `main.dart` and a route builder — one scope only.
+- Never wrap `MaterialApp` itself with a provider — always place the provider **above** `MaterialApp` or wrap its child.
+- Keep route builders thin — `BlocProvider` / `MultiBlocProvider` + view only, no logic.
+
+### 1 BLoC on 1 screen → `BlocProvider` in route builder
+
+```dart
+// app_routes.dart
+RouteNames.login: (context) => BlocProvider(
+  create: (_) => LoginBloc(loginRepository: LoginRepositoryImpl()),
+  child: const LoginView(),
+),
+```
+
+### Many BLoCs on 1 screen → `MultiBlocProvider` in route builder
+
+```dart
+// app_routes.dart
+RouteNames.profile: (context) => MultiBlocProvider(
+  providers: [
+    BlocProvider(create: (_) => ProfileBloc(repo: ProfileRepositoryImpl())),
+    BlocProvider(create: (_) => AvatarBloc(repo: AvatarRepositoryImpl())),
+  ],
+  child: const ProfileView(),
+),
+```
+
+### 1 BLoC across all screens → `BlocProvider` in `main.dart`
+
+```dart
+// main.dart
+BlocProvider(
+  create: (_) => AuthBloc(repo: AuthRepositoryImpl()),
+  child: MaterialApp(
+    initialRoute: RouteNames.home,
+    routes: AppRoutes.routes,
+  ),
+)
+```
+
+### Many BLoCs across all screens → `MultiBlocProvider` in `main.dart`
+
+```dart
+// main.dart
+MultiBlocProvider(
+  providers: [
+    BlocProvider(create: (_) => AuthBloc(repo: AuthRepositoryImpl())),
+    BlocProvider(create: (_) => ThemeBloc()),
+    BlocProvider(create: (_) => UserBloc(repo: UserRepositoryImpl())),
+  ],
+  child: MaterialApp(
+    initialRoute: RouteNames.home,
+    routes: AppRoutes.routes,
+  ),
+)
+```
+
+### Don'ts
+
+- **Don't** use `MultiBlocProvider` for a single BLoC — unnecessary widget tree depth.
+- **Don't** provide the same BLoC twice at different levels — causes duplicate state.
+- **Don't** put business logic, API calls, or post-frame callbacks inside `create:`.
+- **Don't** use `context.read<XBloc>()` in `create:` to pass one BLoC into another —
+  inject the shared dependency (repository or service) directly into both BLoC constructors instead.
+
 
 ## Practical Rules (apply to all features)
 
