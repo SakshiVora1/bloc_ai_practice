@@ -8,6 +8,7 @@ import 'package:subqdocs_bloc/data/models/organization_model.dart';
 import 'package:subqdocs_bloc/data/models/staff_model.dart';
 import 'package:subqdocs_bloc/data/models/office_location_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
+import 'package:subqdocs_bloc/data/models/visit_model.dart';
 import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
 
 part 'home_screen_event.dart';
@@ -37,6 +38,9 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     );
     on<HomeScreenFilterPanelClosed>(_onFilterPanelClosed);
     on<HomeScreenSuccessMessageConsumed>(_onSuccessMessageConsumed);
+    on<HomeScreenCurrentVisitsRequested>(_onCurrentVisitsRequested);
+    on<HomeScreenUpcomingVisitsRequested>(_onUpcomingVisitsRequested);
+    on<HomeScreenRecordedVisitsRequested>(_onRecordedVisitsRequested);
   }
 
 
@@ -53,6 +57,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
         endDate: null,
         displayLabel: _computeDisplayLabel(today, null),
         isLoadingOrganization: true,
+        isLoadingVisits: true,
       ),
     );
 
@@ -91,6 +96,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
         emit(
           _asReady(state).copyWith(
             isLoadingOrganization: false,
+            isLoadingVisits: true,
             allProviders: allProviders,
             allMedicalAssistants: allMAs,
             allOfficeLocations: allLocations,
@@ -105,6 +111,11 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
             displayLabel: _computeDisplayLabel(finalStart, finalEnd),
           ),
         );
+
+        // Trigger visit fetching for all sections
+        add(const HomeScreenCurrentVisitsRequested());
+        add(const HomeScreenUpcomingVisitsRequested());
+        add(const HomeScreenRecordedVisitsRequested());
       }
     } catch (e) {
       if (!isClosed) {
@@ -442,10 +453,172 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
       if (!isClosed && shouldToast && message != null && message.isNotEmpty) {
         emit(readyState.copyWith(successMessage: message));
       }
+      
+      // Refresh visits after syncing filters
+      if (!isClosed) {
+        add(const HomeScreenCurrentVisitsRequested());
+        add(const HomeScreenUpcomingVisitsRequested());
+        add(const HomeScreenRecordedVisitsRequested());
+      }
     } catch (e) {
       if (!isClosed) {
         emit(readyState.copyWith(errorMessage: e.toString()));
       }
     }
+  }
+
+  Future<void> _onCurrentVisitsRequested(
+    HomeScreenCurrentVisitsRequested event,
+    Emitter<HomeScreenState> emit,
+  ) async {
+    if (state is! HomeScreenReady) return;
+    final currentState = _asReady(state);
+    
+    final int targetPage = event.isNextPage ? currentState.pageCurrent + 1 : 1;
+    if (event.isNextPage && targetPage > currentState.totalPageCurrent) return;
+
+    if (event.isNextPage) {
+      emit(currentState.copyWith(isFetchingMoreCurrent: true));
+    } else {
+      emit(currentState.copyWith(isLoadingVisits: true));
+    }
+
+    try {
+      final filters = _buildFilters(currentState);
+      final response = await homeRepository.getCurrentVisits(
+        filters: filters,
+        page: targetPage,
+      );
+
+      if (!isClosed) {
+        final List<VisitModel> updatedList = event.isNextPage 
+            ? [...currentState.currentVisits, ...response.data]
+            : response.data;
+            
+        emit(_asReady(state).copyWith(
+          currentVisits: updatedList,
+          pageCurrent: response.page,
+          totalPageCurrent: response.totalPage,
+          filteredCountCurrent: response.filteredCount,
+          isFetchingMoreCurrent: false,
+          isLoadingVisits: false,
+        ));
+      }
+    } catch (e) {
+      if (!isClosed) {
+        emit(_asReady(state).copyWith(
+          errorMessage: e.toString(),
+          isFetchingMoreCurrent: false,
+          isLoadingVisits: false,
+        ));
+      }
+    }
+  }
+
+  Future<void> _onUpcomingVisitsRequested(
+    HomeScreenUpcomingVisitsRequested event,
+    Emitter<HomeScreenState> emit,
+  ) async {
+    if (state is! HomeScreenReady) return;
+    final currentState = _asReady(state);
+    
+    final int targetPage = event.isNextPage ? currentState.pageUpcoming + 1 : 1;
+    if (event.isNextPage && targetPage > currentState.totalPageUpcoming) return;
+
+    if (event.isNextPage) {
+      emit(currentState.copyWith(isFetchingMoreUpcoming: true));
+    } else {
+      emit(currentState.copyWith(isLoadingVisits: true));
+    }
+
+    try {
+      final filters = _buildFilters(currentState);
+      final response = await homeRepository.getUpcomingVisits(
+        filters: filters,
+        page: targetPage,
+      );
+
+      if (!isClosed) {
+        final List<VisitModel> updatedList = event.isNextPage 
+            ? [...currentState.upcomingVisits, ...response.data]
+            : response.data;
+            
+        emit(_asReady(state).copyWith(
+          upcomingVisits: updatedList,
+          pageUpcoming: response.page,
+          totalPageUpcoming: response.totalPage,
+          filteredCountUpcoming: response.filteredCount,
+          isFetchingMoreUpcoming: false,
+          isLoadingVisits: false,
+        ));
+      }
+    } catch (e) {
+      if (!isClosed) {
+        emit(_asReady(state).copyWith(
+          errorMessage: e.toString(),
+          isFetchingMoreUpcoming: false,
+          isLoadingVisits: false,
+        ));
+      }
+    }
+  }
+
+  Future<void> _onRecordedVisitsRequested(
+    HomeScreenRecordedVisitsRequested event,
+    Emitter<HomeScreenState> emit,
+  ) async {
+    if (state is! HomeScreenReady) return;
+    final currentState = _asReady(state);
+    
+    final int targetPage = event.isNextPage ? currentState.pageRecorded + 1 : 1;
+    if (event.isNextPage && targetPage > currentState.totalPageRecorded) return;
+
+    if (event.isNextPage) {
+      emit(currentState.copyWith(isFetchingMoreRecorded: true));
+    } else {
+      emit(currentState.copyWith(isLoadingVisits: true));
+    }
+
+    try {
+      final filters = _buildFilters(currentState);
+      final response = await homeRepository.getRecordedVisits(
+        filters: filters,
+        page: targetPage,
+      );
+
+      if (!isClosed) {
+        final List<VisitModel> updatedList = event.isNextPage 
+            ? [...currentState.recordedVisits, ...response.data]
+            : response.data;
+            
+        emit(_asReady(state).copyWith(
+          recordedVisits: updatedList,
+          pageRecorded: response.page,
+          totalPageRecorded: response.totalPage,
+          filteredCountRecorded: response.filteredCount,
+          isFetchingMoreRecorded: false,
+          isLoadingVisits: false,
+        ));
+      }
+    } catch (e) {
+      if (!isClosed) {
+        emit(_asReady(state).copyWith(
+          errorMessage: e.toString(),
+          isFetchingMoreRecorded: false,
+          isLoadingVisits: false,
+        ));
+      }
+    }
+  }
+
+  SavedVisitFilters _buildFilters(HomeScreenReady readyState) {
+    return SavedVisitFilters(
+      status: readyState.selectedStatuses,
+      doctorIds: readyState.selectedProviders.map((p) => p.id).toList(),
+      maIds: readyState.selectedMedicalAssistants.map((m) => m.id).toList(),
+      locationIds: readyState.selectedOfficeLocations.map((l) => l.id).toList(),
+      startDate: readyState.startDate,
+      endDate: readyState.endDate,
+    );
   }
 }

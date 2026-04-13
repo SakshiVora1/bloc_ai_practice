@@ -82,3 +82,18 @@ final class HomeScreenFilterPanelClosed extends HomeScreenEvent {
 final class HomeScreenSuccessMessageConsumed extends HomeScreenEvent {
   const HomeScreenSuccessMessageConsumed();
 }
+
+final class HomeScreenCurrentVisitsRequested extends HomeScreenEvent {
+  const HomeScreenCurrentVisitsRequested({this.isNextPage = false});
+  final bool isNextPage;
+}
+
+final class HomeScreenUpcomingVisitsRequested extends HomeScreenEvent {
+  const HomeScreenUpcomingVisitsRequested({this.isNextPage = false});
+  final bool isNextPage;
+}
+
+final class HomeScreenRecordedVisitsRequested extends HomeScreenEvent {
+  const HomeScreenRecordedVisitsRequested({this.isNextPage = false});
+  final bool isNextPage;
+}

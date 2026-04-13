@@ -16,9 +16,11 @@ String formatDisplayDate(
   final DateTime start = _dateOnly(startDate);
   if (endDate != null) {
     final DateTime end = _dateOnly(endDate);
-    final DateTime rangeStart = start.isBefore(end) ? start : end;
-    final DateTime rangeEnd = start.isBefore(end) ? end : start;
-    return '${formatDateMmDdYyyy(rangeStart)} - ${formatDateMmDdYyyy(rangeEnd)}';
+    if (!_isSameDay(start, end)) {
+      final DateTime rangeStart = start.isBefore(end) ? start : end;
+      final DateTime rangeEnd = start.isBefore(end) ? end : start;
+      return '${formatDateMmDdYyyy(rangeStart)} - ${formatDateMmDdYyyy(rangeEnd)}';
+    }
   }
 
   final DateTime today = _dateOnly(now());

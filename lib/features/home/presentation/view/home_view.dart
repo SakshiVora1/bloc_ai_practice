@@ -64,23 +64,7 @@ class _HomeViewState extends State<HomeView> {
             context.read<HomeScreenBloc>().add(const HomeScreenFilterPanelClosed());
           }
         },
-        body: BlocBuilder<HomeScreenBloc, HomeScreenState>(
-          builder: (BuildContext context, HomeScreenState state) {
-            final bool isLoading = state is HomeScreenReady && state.isLoadingOrganization;
-            return Stack(
-              children: [
-                const HomeBodyContent(),
-                if (isLoading)
-                  Container(
-                    color: Colors.black12,
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
+        body: const HomeBodyContent(),
       ),
     );
   }

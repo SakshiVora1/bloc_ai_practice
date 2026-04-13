@@ -54,10 +54,14 @@ class FilterDateSelector extends StatelessWidget {
   String _formatDateRange(DateTime? start, DateTime? end) {
     if (start == null) return '';
     final DateFormat formatter = DateFormat('MM/dd/yyyy');
-    if (end == null) {
+    if (end == null || _isSameDay(start, end)) {
       return formatter.format(start);
     }
     return '${formatter.format(start)} - ${formatter.format(end)}';
+  }
+
+  bool _isSameDay(DateTime d1, DateTime d2) {
+    return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
   }
 
   Widget _buildCalendar(BuildContext context, HomeScreenReady state) {
@@ -134,11 +138,11 @@ class FilterDateSelector extends StatelessWidget {
         : null;
 
     if (label == AppStrings.homeScheduleDateToday) {
-      return s == today && e == null;
+      return s == today && (e == null || e == s);
     } else if (label == AppStrings.dateShortcutTomorrow) {
-      return s == today.add(const Duration(days: 1)) && e == null;
+      return s == today.add(const Duration(days: 1)) && (e == null || e == s);
     } else if (label == AppStrings.dateShortcutYesterday) {
-      return s == today.subtract(const Duration(days: 1)) && e == null;
+      return s == today.subtract(const Duration(days: 1)) && (e == null || e == s);
     } else if (label == AppStrings.dateShortcutNext7Days) {
       return s == today && e == today.add(const Duration(days: 6));
     } else if (label == AppStrings.dateShortcutPast7Days) {

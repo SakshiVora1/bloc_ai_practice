@@ -6,6 +6,7 @@ import 'package:subqdocs_bloc/features/home/domain/home_visit_display.dart';
 import 'package:subqdocs_bloc/features/home/domain/status_mapping.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/home_visit_avatar.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/home_visit_marker.dart';
+import 'package:subqdocs_bloc/data/models/visit_model.dart';
 
 class HomeVisitRow extends StatelessWidget {
   const HomeVisitRow({
@@ -14,33 +15,31 @@ class HomeVisitRow extends StatelessWidget {
     required this.markerType,
   });
 
-  final Map<String, dynamic> visit;
+  final VisitModel visit;
   final HomeVisitMarkerType markerType;
 
   @override
   Widget build(BuildContext context) {
     final String visitTime = formatHomeVisitDateTime(
-      visit['appointmentTime']?.toString(),
-      visit['visit_time']?.toString(),
+      visit.appointmentTime,
+      visit.visitTime,
     );
-    final String doctor = homeVisitDoctorName(visit['doctorName']?.toString());
-    final String firstName = visit['first_name']?.toString().trim() ?? '';
-    final String lastName = visit['last_name']?.toString().trim() ?? '';
-    final String fullName = '$firstName $lastName'.trim();
-    final String gender = homeVisitGenderCode(visit['gender']?.toString());
+    final String doctor = homeVisitDoctorName(visit.doctorName);
+    final String fullName = visit.fullName;
+    final String gender = homeVisitGenderCode(visit.gender);
     final String dateAge = homeVisitDateAndAge(
-      visit['date_of_birth']?.toString(),
-      visit['age'],
+      visit.dateOfBirth,
+      visit.age,
     );
     final String visitType =
-        (visit['visitTypeName']?.toString().trim().isNotEmpty ?? false)
-        ? visit['visitTypeName'].toString().trim()
+        (visit.visitTypeName?.trim().isNotEmpty ?? false)
+        ? visit.visitTypeName!.trim()
         : AppStrings.homeUnknownLabel;
     final String visitDescription =
-        (visit['visit_type_description']?.toString().trim().isNotEmpty ?? false)
-        ? visit['visit_type_description'].toString().trim()
+        (visit.visitTypeDescription?.trim().isNotEmpty ?? false)
+        ? visit.visitTypeDescription!.trim()
         : AppStrings.homeUnknownLabel;
-    final String status = visit['visit_status']?.toString().trim() ?? '';
+    final String status = visit.visitStatus.trim();
 
     return Container(
       height: 88,

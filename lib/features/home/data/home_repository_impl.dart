@@ -1,11 +1,14 @@
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:subqdocs_bloc/core/constants/app_preferences_keys.dart';
 import 'package:subqdocs_bloc/core/services/api_exceptions.dart';
 import 'package:subqdocs_bloc/core/services/api_service.dart';
 import 'package:subqdocs_bloc/core/services/app_preferences.dart';
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 import 'package:subqdocs_bloc/data/models/organization_model.dart';
 import 'package:subqdocs_bloc/data/models/staff_model.dart';
 import 'package:subqdocs_bloc/data/models/office_location_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
+import 'package:subqdocs_bloc/data/models/visit_model.dart';
 import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
 import 'package:subqdocs_bloc/features/home/domain/repositories/home_repository.dart';
 
@@ -172,6 +175,86 @@ final class HomeRepositoryImpl implements HomeRepository {
       throw const ParseApiException(message: 'filters/visit API returned non-object response');
     }
     return Map<String, dynamic>.from(data);
+  }
+
+  static const String currentVisitsPath = 'patient/visits/current';
+  static const String upcomingVisitsPath = 'patient/visits/upcoming';
+  static const String recordedVisitsPath = 'patient/visits/recorded';
+
+  @override
+  Future<VisitListResponse> getCurrentVisits({
+    required SavedVisitFilters filters,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    return _getVisits(currentVisitsPath, filters, page, limit);
+  }
+
+  @override
+  Future<VisitListResponse> getUpcomingVisits({
+    required SavedVisitFilters filters,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    return _getVisits(upcomingVisitsPath, filters, page, limit);
+  }
+
+  @override
+  Future<VisitListResponse> getRecordedVisits({
+    required SavedVisitFilters filters,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    return _getVisits(recordedVisitsPath, filters, page, limit);
+  }
+
+  Future<VisitListResponse> _getVisits(
+    String path,
+    SavedVisitFilters filters,
+    int page,
+    int limit,
+  ) async {
+    final String? bearer = await _sessionBearerToken();
+    if (bearer == null || bearer.isEmpty) {
+      throw const UnauthorizedApiException(message: 'No active session');
+    }
+
+    final String timezone = (await FlutterTimezone.getLocalTimezone()).identifier;
+    
+    // Construct query parameters as requested
+    final Map<String, dynamic> params = {
+      'dateRange[startDate]': filters.startDate != null ? formatYyyyMmDd(filters.startDate!) : formatYyyyMmDd(DateTime.now()),
+      'dateRange[endDate]': filters.endDate != null ? formatYyyyMmDd(filters.endDate!) : (filters.startDate != null ? formatYyyyMmDd(filters.startDate!) : formatYyyyMmDd(DateTime.now())),
+      'timezone': timezone,
+      'page': page,
+      'limit': limit,
+    };
+
+    if (filters.locationIds.isNotEmpty) {
+      params['officeLocations[]'] = filters.locationIds;
+    }
+    if (filters.status.isNotEmpty) {
+      params['status[]'] = filters.status;
+    }
+    if (filters.doctorIds.isNotEmpty) {
+      params['doctorsName[]'] = filters.doctorIds;
+    }
+
+    final dynamic data = await _apiService.get(
+      path,
+      queryParameters: params,
+      bearerToken: bearer,
+    );
+    
+    if (data is! Map) {
+      throw const ParseApiException(message: 'Visits API returned non-object response');
+    }
+    
+    try {
+      return VisitListResponse.fromJson(Map<String, dynamic>.from(data));
+    } on FormatException catch (e) {
+      throw ParseApiException(message: e.message);
+    }
   }
 
   Future<String?> _sessionBearerToken() async {

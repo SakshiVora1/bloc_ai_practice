@@ -8,6 +8,7 @@ import 'package:subqdocs_bloc/data/models/organization_model.dart';
 import 'package:subqdocs_bloc/data/models/staff_model.dart';
 import 'package:subqdocs_bloc/data/models/office_location_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
+import 'package:subqdocs_bloc/data/models/visit_model.dart';
 import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
 
 class _MockHomeRepository implements HomeRepository {
@@ -44,6 +45,51 @@ class _MockHomeRepository implements HomeRepository {
     SavedVisitFilters filters,
   ) async {
     return {'toast': true, 'message': 'Success'};
+  }
+
+  @override
+  Future<VisitListResponse> getCurrentVisits({
+    required SavedVisitFilters filters,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    return VisitListResponse(
+      data: [],
+      filteredCount: 0,
+      page: 1,
+      limit: 100,
+      totalPage: 1,
+    );
+  }
+
+  @override
+  Future<VisitListResponse> getUpcomingVisits({
+    required SavedVisitFilters filters,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    return VisitListResponse(
+      data: [],
+      filteredCount: 0,
+      page: 1,
+      limit: 100,
+      totalPage: 1,
+    );
+  }
+
+  @override
+  Future<VisitListResponse> getRecordedVisits({
+    required SavedVisitFilters filters,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    return VisitListResponse(
+      data: [],
+      filteredCount: 0,
+      page: 1,
+      limit: 100,
+      totalPage: 1,
+    );
   }
 }
 

@@ -31,7 +31,7 @@ abstract final class AppColors {
 
   static const Color homeSectionBackground = Color(0xFFF9FAFB);
   static const Color homeSectionDivider = Color(0xFFE5E7EB);
-  static const Color homeSectionHeaderBackground = Color(0xFFF3F4F6);
+  static const Color homeSectionHeaderBackground = Color(0xFFEFF6FF);
   static const Color homeTimeColumnBackground = Color(0xFFF3F4F6);
 
   static const Color homeStatusScheduledBackground = Color(0xFFE0E7FF);

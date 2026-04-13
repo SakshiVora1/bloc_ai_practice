@@ -19,6 +19,7 @@ final class HomeScreenReady extends HomeScreenState {
   final bool signalOpenEndDrawer;
   final String searchQuery;
   final bool isLoadingOrganization;
+  final bool isLoadingVisits;
   final String? errorMessage;
   final String? successMessage;
   final List<String> selectedStatuses;
@@ -26,6 +27,29 @@ final class HomeScreenReady extends HomeScreenState {
   final List<StaffModel> selectedMedicalAssistants;
   final List<OfficeLocationModel> selectedOfficeLocations;
   final bool isCalendarVisible;
+
+  // Visit lists
+  final List<VisitModel> currentVisits;
+  final List<VisitModel> upcomingVisits;
+  final List<VisitModel> recordedVisits;
+
+  // Per-section pagination
+  final int pageCurrent;
+  final int totalPageCurrent;
+  final bool isFetchingMoreCurrent;
+
+  final int pageUpcoming;
+  final int totalPageUpcoming;
+  final bool isFetchingMoreUpcoming;
+
+  final int pageRecorded;
+  final int totalPageRecorded;
+  final bool isFetchingMoreRecorded;
+
+  // Filtered counts (from API response)
+  final int filteredCountCurrent;
+  final int filteredCountUpcoming;
+  final int filteredCountRecorded;
 
   // Source lists (local storage for dropdowns)
   final List<StaffModel> allProviders;
@@ -49,6 +73,7 @@ final class HomeScreenReady extends HomeScreenState {
     this.signalOpenEndDrawer = false,
     this.searchQuery = '',
     this.isLoadingOrganization = false,
+    this.isLoadingVisits = false,
     this.errorMessage,
     this.successMessage,
     this.selectedStatuses = const [],
@@ -56,6 +81,21 @@ final class HomeScreenReady extends HomeScreenState {
     this.selectedMedicalAssistants = const [],
     this.selectedOfficeLocations = const [],
     this.isCalendarVisible = false,
+    this.currentVisits = const [],
+    this.upcomingVisits = const [],
+    this.recordedVisits = const [],
+    this.pageCurrent = 1,
+    this.totalPageCurrent = 1,
+    this.isFetchingMoreCurrent = false,
+    this.pageUpcoming = 1,
+    this.totalPageUpcoming = 1,
+    this.isFetchingMoreUpcoming = false,
+    this.pageRecorded = 1,
+    this.totalPageRecorded = 1,
+    this.isFetchingMoreRecorded = false,
+    this.filteredCountCurrent = 0,
+    this.filteredCountUpcoming = 0,
+    this.filteredCountRecorded = 0,
     this.allProviders = const [],
     this.allMedicalAssistants = const [],
     this.allOfficeLocations = const [],
@@ -76,6 +116,7 @@ final class HomeScreenReady extends HomeScreenState {
     bool? signalOpenEndDrawer,
     String? searchQuery,
     bool? isLoadingOrganization,
+    bool? isLoadingVisits,
     String? errorMessage,
     String? successMessage,
     bool clearRange = false,
@@ -87,6 +128,21 @@ final class HomeScreenReady extends HomeScreenState {
     List<StaffModel>? selectedMedicalAssistants,
     List<OfficeLocationModel>? selectedOfficeLocations,
     bool? isCalendarVisible,
+    List<VisitModel>? currentVisits,
+    List<VisitModel>? upcomingVisits,
+    List<VisitModel>? recordedVisits,
+    int? pageCurrent,
+    int? totalPageCurrent,
+    bool? isFetchingMoreCurrent,
+    int? pageUpcoming,
+    int? totalPageUpcoming,
+    bool? isFetchingMoreUpcoming,
+    int? pageRecorded,
+    int? totalPageRecorded,
+    bool? isFetchingMoreRecorded,
+    int? filteredCountCurrent,
+    int? filteredCountUpcoming,
+    int? filteredCountRecorded,
     List<StaffModel>? allProviders,
     List<StaffModel>? allMedicalAssistants,
     List<OfficeLocationModel>? allOfficeLocations,
@@ -109,6 +165,7 @@ final class HomeScreenReady extends HomeScreenState {
       signalOpenEndDrawer: signalOpenEndDrawer ?? this.signalOpenEndDrawer,
       searchQuery: searchQuery ?? this.searchQuery,
       isLoadingOrganization: isLoadingOrganization ?? this.isLoadingOrganization,
+      isLoadingVisits: isLoadingVisits ?? this.isLoadingVisits,
       errorMessage:
           clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       successMessage:
@@ -120,6 +177,21 @@ final class HomeScreenReady extends HomeScreenState {
       selectedOfficeLocations:
           selectedOfficeLocations ?? this.selectedOfficeLocations,
       isCalendarVisible: isCalendarVisible ?? this.isCalendarVisible,
+      currentVisits: currentVisits ?? this.currentVisits,
+      upcomingVisits: upcomingVisits ?? this.upcomingVisits,
+      recordedVisits: recordedVisits ?? this.recordedVisits,
+      pageCurrent: pageCurrent ?? this.pageCurrent,
+      totalPageCurrent: totalPageCurrent ?? this.totalPageCurrent,
+      isFetchingMoreCurrent: isFetchingMoreCurrent ?? this.isFetchingMoreCurrent,
+      pageUpcoming: pageUpcoming ?? this.pageUpcoming,
+      totalPageUpcoming: totalPageUpcoming ?? this.totalPageUpcoming,
+      isFetchingMoreUpcoming: isFetchingMoreUpcoming ?? this.isFetchingMoreUpcoming,
+      pageRecorded: pageRecorded ?? this.pageRecorded,
+      totalPageRecorded: totalPageRecorded ?? this.totalPageRecorded,
+      isFetchingMoreRecorded: isFetchingMoreRecorded ?? this.isFetchingMoreRecorded,
+      filteredCountCurrent: filteredCountCurrent ?? this.filteredCountCurrent,
+      filteredCountUpcoming: filteredCountUpcoming ?? this.filteredCountUpcoming,
+      filteredCountRecorded: filteredCountRecorded ?? this.filteredCountRecorded,
       allProviders: allProviders ?? this.allProviders,
       allMedicalAssistants: allMedicalAssistants ?? this.allMedicalAssistants,
       allOfficeLocations: allOfficeLocations ?? this.allOfficeLocations,

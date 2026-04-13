@@ -19,7 +19,8 @@ class HomeFilterSummary extends StatelessWidget {
         final hasDoctors = state.selectedProviders.isNotEmpty;
         final hasMAs = state.selectedMedicalAssistants.isNotEmpty;
         final hasLocations = state.selectedOfficeLocations.isNotEmpty;
-        final hasDateRange = state.endDate != null;
+        final hasDateRange = state.endDate != null && 
+            !_isSameDaySummary(state.startDate, state.endDate!);
 
         if (!hasStatus &&
             !hasDoctors &&
@@ -110,8 +111,13 @@ class HomeFilterSummary extends StatelessWidget {
 
   String _formatRange(DateTime? start, DateTime? end) {
     if (start == null) return '';
-    if (end == null) return formatDateMmDdYyyy(start);
+    if (end == null || _isSameDaySummary(start, end)) return formatDateMmDdYyyy(start);
     return '${formatDateMmDdYyyy(start)} - ${formatDateMmDdYyyy(end)}';
+  }
+
+  bool _isSameDaySummary(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }
 
