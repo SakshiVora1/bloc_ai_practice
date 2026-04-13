@@ -4,7 +4,6 @@ import 'package:subqdocs_bloc/core/constants/app_preferences_keys.dart';
 import 'package:subqdocs_bloc/core/services/api_exceptions.dart';
 import 'package:subqdocs_bloc/core/services/api_service.dart';
 import 'package:subqdocs_bloc/core/services/app_preferences.dart';
-import 'package:subqdocs_bloc/data/models/login_model.dart';
 import 'package:subqdocs_bloc/features/patients/data/patients_list_api_envelope.dart';
 import 'package:subqdocs_bloc/features/patients/domain/repositories/patients_repository.dart';
 
@@ -60,17 +59,8 @@ final class PatientsRepositoryImpl implements PatientsRepository {
   }
 
   Future<String?> _sessionBearerToken() async {
-    final String? raw = await _preferences.getString(
-      AppPreferencesKeys.loginResponse,
+    return _preferences.getString(
+      AppPreferencesKeys.bearerToken,
     );
-    if (raw == null || raw.trim().isEmpty) {
-      return null;
-    }
-    try {
-      final LoginModel model = loginModelFromJson(raw);
-      return model.responseData?.token?.trim();
-    } catch (_) {
-      return null;
-    }
   }
 }

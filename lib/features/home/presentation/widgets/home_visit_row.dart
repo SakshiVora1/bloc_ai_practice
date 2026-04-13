@@ -3,9 +3,9 @@ import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/features/home/domain/home_visit_display.dart';
+import 'package:subqdocs_bloc/features/home/domain/status_mapping.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/home_visit_avatar.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/home_visit_marker.dart';
-import 'package:subqdocs_bloc/features/home/presentation/widgets/home_visit_status_style.dart';
 
 class HomeVisitRow extends StatelessWidget {
   const HomeVisitRow({
@@ -41,7 +41,6 @@ class HomeVisitRow extends StatelessWidget {
         ? visit['visit_type_description'].toString().trim()
         : AppStrings.homeUnknownLabel;
     final String status = visit['visit_status']?.toString().trim() ?? '';
-    final HomeVisitStatusStyle statusStyle = homeVisitStatusStyleFor(status);
 
     return Container(
       height: 88,
@@ -148,24 +147,28 @@ class HomeVisitRow extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                Expanded(
-                  child: Align(
+                SizedBox(
+                  width: MediaQuery.orientationOf(context) == Orientation.portrait
+                      ? 155
+                      : 180,
+                  height: 30,
+                  child: Container(
                     alignment: Alignment.center,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusStyle.backgroundColor,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        status,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppFonts.medium(12, statusStyle.textColor),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: StatusMapping.getColor(status)
+                          .withAlpha((0.2 * 255).toInt()),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      status,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppFonts.medium(
+                        12,
+                        StatusMapping.getColor(status),
                       ),
                     ),
                   ),

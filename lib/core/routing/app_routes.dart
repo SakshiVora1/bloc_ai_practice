@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:subqdocs_bloc/core/routing/medical_record_route_args.dart';
 import 'package:subqdocs_bloc/core/routing/route_names.dart';
 import 'package:subqdocs_bloc/features/home/presentation/bloc/home_screen_bloc.dart';
+import 'package:subqdocs_bloc/features/home/data/home_repository_impl.dart';
 import 'package:subqdocs_bloc/features/home/presentation/view/home_view.dart';
 import 'package:subqdocs_bloc/features/login/data/login_repository_impl.dart';
 import 'package:subqdocs_bloc/features/login/presentation/bloc/login_screen_bloc.dart';
@@ -30,19 +31,17 @@ abstract final class AppRoutes {
       child: const LoginScreenView(),
     ),
     RouteNames.home: (BuildContext context) => BlocProvider(
-      create: (_) => HomeScreenBloc()..add(const HomeScreenStarted()),
+      create: (_) => HomeScreenBloc(homeRepository: HomeRepositoryImpl()),
       child: const HomeView(),
     ),
     RouteNames.patients: (BuildContext context) => BlocProvider(
       create: (_) =>
-          PatientsScreenBloc(patientsRepository: PatientsRepositoryImpl())
-            ..add(const PatientsScreenStarted()),
+          PatientsScreenBloc(patientsRepository: PatientsRepositoryImpl()),
       child: const PatientsView(),
     ),
     RouteNames.settings: (BuildContext context) => BlocProvider(
       create: (_) =>
-          SettingsBloc(settingsRepository: SettingsRepositoryImpl())
-            ..add(const SettingsStarted()),
+          SettingsBloc(settingsRepository: SettingsRepositoryImpl()),
       child: const SettingsView(),
     ),
     RouteNames.medicalRecord: (BuildContext context) {

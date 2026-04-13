@@ -1,7 +1,6 @@
 ---
 description: Routing conventions — RouteNames paths, AppRoutes.routes builders, AppRouter
-globs: "**/*route_names*.dart,**/*app_routes*.dart,lib/main.dart"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Routing Conventions
@@ -52,3 +51,31 @@ RouteNames.login: (context) => BlocProvider(
 
 - **Don't** hard-code route strings in `Navigator.pushNamed` without **`RouteNames`**.
 - **Don't** put navigation logic in Bloc—use `BlocListener` in UI layer.
+- **Don't** dispatch or call any BLoC event from a route builder — route builders
+  are wiring only (`BlocProvider` / `MultiBlocProvider` + view, nothing else).
+- **Don't** put business logic, API calls, post-frame callbacks, or conditional
+  logic inside route builders.
+
+
+### Event dispatch — correct pattern
+
+```dart
+// WRONG — event dispatched inside route builder
+RouteNames.home: (context) => BlocProvider(
+  create: (_) => HomeBloc()..add(FetchHomeData()),
+  child: const HomeView(),
+),
+
+// CORRECT — route builder is thin, event dispatched from view
+RouteNames.home: (context) => BlocProvider(
+  create: (_) => HomeBloc(),
+  child: const HomeView(),
+),
+
+// HomeView — initState is the right place
+@override
+void initState() {
+  super.initState();
+  context.read().add(FetchHomeData());
+}
+```

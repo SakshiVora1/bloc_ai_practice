@@ -43,6 +43,10 @@ class LoginScreenBloc extends Bloc<LoginScreenEvent, LoginScreenState> {
           AppPreferencesKeys.loginResponse,
           loginModelToJson(model),
         );
+        final String? token = model.responseData?.token?.trim();
+        if (token != null && token.isNotEmpty) {
+          await _preferences.setString(AppPreferencesKeys.bearerToken, token);
+        }
         emit(
           state.copyWith(
             isSubmitting: false,

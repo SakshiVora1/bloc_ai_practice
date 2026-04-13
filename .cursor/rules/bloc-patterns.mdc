@@ -45,6 +45,7 @@ alwaysApply: true
 
 - Prefer **immutable** state classes with **`copyWith`** or **new instances** inside the BLoC for business/UI-backed data; avoid parallel mutable "side" fields for the same concerns.
 
+## BlocProvider / MultiBlocProvider placement
 - Use the decision table below to determine the correct widget and placement.
 - For code examples see `routing-conventions.mdc`.
 

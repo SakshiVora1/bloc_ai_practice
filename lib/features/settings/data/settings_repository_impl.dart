@@ -152,6 +152,10 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       if (resolvedToken.isNotEmpty) {
         model.responseData!.token = resolvedToken;
         user.token = resolvedToken;
+        await _preferences.setString(
+          AppPreferencesKeys.bearerToken,
+          resolvedToken,
+        );
       }
       await _preferences.setString(
         AppPreferencesKeys.loginResponse,
@@ -168,17 +172,8 @@ final class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   Future<String?> _sessionBearerToken() async {
-    final String? raw = await _preferences.getString(
-      AppPreferencesKeys.loginResponse,
+    return _preferences.getString(
+      AppPreferencesKeys.bearerToken,
     );
-    if (raw == null || raw.trim().isEmpty) {
-      return null;
-    }
-    try {
-      final LoginModel model = loginModelFromJson(raw);
-      return model.responseData?.token?.trim();
-    } catch (_) {
-      return null;
-    }
   }
 }

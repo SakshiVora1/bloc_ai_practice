@@ -4,6 +4,7 @@ import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/features/home/presentation/bloc/home_screen_bloc.dart';
+import 'package:subqdocs_bloc/features/home/presentation/widgets/home_filter_panel.dart';
 
 class HomeEndDrawer extends StatelessWidget {
   const HomeEndDrawer({super.key});
@@ -11,6 +12,8 @@ class HomeEndDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      width: MediaQuery.sizeOf(context).width * 0.45,
+      backgroundColor: AppColors.white,
       child: SafeArea(
         child:
             BlocSelector<
@@ -39,26 +42,34 @@ class HomeEndDrawer extends StatelessWidget {
                         AppStrings.homeEndDrawerScheduleVisitTitle,
                       null => '',
                     };
-                    return Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          Text(
-                            title,
-                            style: AppFonts.semiBold(18, AppColors.primaryText),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            AppStrings.homeSubtitle,
-                            style: AppFonts.regular(
-                              14,
-                              AppColors.secondaryText,
+                    final Widget content = switch (activeEndDrawer) {
+                      HomeScreenEndDrawerKind.filter => const HomeFilterPanel(),
+                      HomeScreenEndDrawerKind.scheduleVisit => Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Text(
+                              title,
+                              style: AppFonts.semiBold(
+                                18,
+                                AppColors.primaryText,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            Text(
+                              AppStrings.homeSubtitle,
+                              style: AppFonts.regular(
+                                14,
+                                AppColors.secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    );
+                      null => const SizedBox.shrink(),
+                    };
+                    return content;
                   },
             ),
       ),

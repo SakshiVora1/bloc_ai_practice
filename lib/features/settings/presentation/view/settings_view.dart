@@ -22,6 +22,12 @@ class SettingsView extends StatefulWidget {
 class _SettingsViewState extends State<SettingsView> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+    context.read<SettingsBloc>().add(const SettingsStarted());
+  }
+
   SettingsBody _buildSettingsBody(User? user, {required bool isLoggingOut}) {
     return SettingsBody(user: user, isLoggingOut: isLoggingOut);
   }

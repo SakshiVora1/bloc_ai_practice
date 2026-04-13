@@ -96,18 +96,30 @@ abstract final class AppStrings {
   static const String cancelButton = 'Cancel';
 
   static const String dateRangePlaceholder = 'Select date range';
-  static const String dateShortcutToday = 'Today';
-  static const String dateShortcutThisWeek = 'This week';
+  static const String dateShortcutPast7Days = 'Past 7 days';
+  static const String dateShortcutNext7Days = 'Next 7 days';
   static const String dateShortcutThisMonth = 'This month';
+  static const String dateShortcutLastMonth = 'Last month';
+  static const String dateShortcutTomorrow = 'Tomorrow';
+  static const String dateShortcutYesterday = 'Yesterday';
 
-  static const String filterPanelTitle = 'Filters';
+  static const String recordNowLabel = 'Record now';
   static const String filterCloseSemantics = 'Close filters';
   static const String filterDateShortcuts = 'Quick dates';
   static const String filterStatus = 'Status';
   static const String filterProvider = 'Provider';
-  static const String filterOffice = 'Office';
+  static const String filterMedicalAssistant = 'Medical Assistant';
+  static const String filterOffice = 'Office Location';
   static const String filterClear = 'Clear filters';
   static const String filterButton = 'Filter';
+
+  static const String homeFilterSummaryLabel = 'Filters:';
+  static const String homeFilterClearAll = 'Clear all';
+  static const String homeFilterVisitDatePrefix = 'Visit Date:';
+  static const String homeFilterStatusPrefix = 'Status:';
+  static const String homeFilterProviderPrefix = 'Provider:';
+  static const String homeFilterMedicalAssistantPrefix = 'Medical Assistant:';
+  static const String homeFilterOfficePrefix = 'Office Location:';
 
   static const String searchHint = 'Search';
 
@@ -161,7 +173,7 @@ abstract final class AppStrings {
   static const String patientSelectorHint = 'Select patient';
   static const String providerLabel = 'Provider';
   static const String providerSelectorHint = 'Select provider';
-  static const String officeLocationLabel = 'Office';
+  static const String officeLocationLabel = 'Office Location';
   static const String officeSelectorHint = 'Select office';
 
   static const String visitDateLabel = 'Visit date';

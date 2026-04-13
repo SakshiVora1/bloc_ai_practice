@@ -42,3 +42,43 @@ final class HomeScreenSearchQueryChanged extends HomeScreenEvent {
 
   final String query;
 }
+
+final class HomeScreenErrorMessageConsumed extends HomeScreenEvent {
+  const HomeScreenErrorMessageConsumed();
+}
+
+final class HomeScreenFilterStatusChanged extends HomeScreenEvent {
+  const HomeScreenFilterStatusChanged(this.statuses);
+  final List<String> statuses;
+}
+
+final class HomeScreenFilterProviderChanged extends HomeScreenEvent {
+  const HomeScreenFilterProviderChanged(this.providers);
+  final List<StaffModel> providers;
+}
+
+final class HomeScreenFilterMedicalAssistantChanged extends HomeScreenEvent {
+  const HomeScreenFilterMedicalAssistantChanged(this.medicalAssistants);
+  final List<StaffModel> medicalAssistants;
+}
+
+final class HomeScreenFilterOfficeLocationChanged extends HomeScreenEvent {
+  const HomeScreenFilterOfficeLocationChanged(this.locations);
+  final List<OfficeLocationModel> locations;
+}
+
+final class HomeScreenFilterClearAll extends HomeScreenEvent {
+  const HomeScreenFilterClearAll();
+}
+
+final class HomeScreenFilterCalendarVisibilityToggled extends HomeScreenEvent {
+  const HomeScreenFilterCalendarVisibilityToggled();
+}
+
+final class HomeScreenFilterPanelClosed extends HomeScreenEvent {
+  const HomeScreenFilterPanelClosed();
+}
+
+final class HomeScreenSuccessMessageConsumed extends HomeScreenEvent {
+  const HomeScreenSuccessMessageConsumed();
+}

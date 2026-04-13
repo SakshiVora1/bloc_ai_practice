@@ -1,14 +1,21 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
+import 'package:subqdocs_bloc/core/models/organization_singleton.dart';
 import 'package:subqdocs_bloc/features/home/domain/home_date_display.dart';
+import 'package:subqdocs_bloc/features/home/domain/repositories/home_repository.dart';
+import 'package:subqdocs_bloc/data/models/organization_model.dart';
+import 'package:subqdocs_bloc/data/models/staff_model.dart';
+import 'package:subqdocs_bloc/data/models/office_location_model.dart';
+import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
+import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
 
 part 'home_screen_event.dart';
 
 part 'home_screen_state.dart';
 
 class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
-  HomeScreenBloc() : super(const HomeScreenInitial()) {
+  HomeScreenBloc({required this.homeRepository}) : super(const HomeScreenInitial()) {
     on<HomeScreenStarted>(_onStarted);
     on<HomeScreenDateForward>(_onDateForward);
     on<HomeScreenDateBackward>(_onDateBackward);
@@ -17,17 +24,98 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     on<HomeScreenScheduleVisitOpened>(_onScheduleVisitOpened);
     on<HomeScreenEndDrawerOpenConsumed>(_onEndDrawerOpenConsumed);
     on<HomeScreenSearchQueryChanged>(_onSearchQueryChanged);
+    on<HomeScreenErrorMessageConsumed>(_onErrorMessageConsumed);
+    on<HomeScreenFilterStatusChanged>(_onFilterStatusChanged);
+    on<HomeScreenFilterProviderChanged>(_onFilterProviderChanged);
+    on<HomeScreenFilterMedicalAssistantChanged>(
+      _onFilterMedicalAssistantChanged,
+    );
+    on<HomeScreenFilterOfficeLocationChanged>(_onFilterOfficeLocationChanged);
+    on<HomeScreenFilterClearAll>(_onFilterClearAll);
+    on<HomeScreenFilterCalendarVisibilityToggled>(
+      _onFilterCalendarVisibilityToggled,
+    );
+    on<HomeScreenFilterPanelClosed>(_onFilterPanelClosed);
+    on<HomeScreenSuccessMessageConsumed>(_onSuccessMessageConsumed);
   }
 
-  void _onStarted(HomeScreenStarted event, Emitter<HomeScreenState> emit) {
+
+  final HomeRepository homeRepository;
+
+  Future<void> _onStarted(
+    HomeScreenStarted event,
+    Emitter<HomeScreenState> emit,
+  ) async {
     final DateTime today = todayDateOnly(() => DateTime.now());
     emit(
       HomeScreenReady(
         startDate: today,
         endDate: null,
         displayLabel: _computeDisplayLabel(today, null),
+        isLoadingOrganization: true,
       ),
     );
+
+    try {
+      final results = await Future.wait([
+        homeRepository.getOrganization(),
+        homeRepository.getUsersByRole(role: 'Doctor'),
+        homeRepository.getUsersByRole(role: 'Medical Assistant'),
+        homeRepository.getOfficeLocations(),
+        homeRepository.getVisitTypes(limit: 50, isVisibleToUser: true),
+        homeRepository.getSavedVisitFilters(),
+      ]);
+
+      final allProviders = results[1] as List<StaffModel>;
+      final allMAs = results[2] as List<StaffModel>;
+      final allLocations = results[3] as List<OfficeLocationModel>;
+      final allVisitTypes = results[4] as List<VisitTypeModel>;
+      final savedFilters = results[5] as SavedVisitFilters;
+
+      // Apply saved filters
+      final List<StaffModel> selectedProviders = savedFilters.doctorIds
+          .map((id) => allProviders.firstWhere((p) => p.id == id))
+          .toList();
+      final List<StaffModel> selectedMAs = savedFilters.maIds
+          .map((id) => allMAs.firstWhere((m) => m.id == id))
+          .toList();
+      final List<OfficeLocationModel> selectedLocations = savedFilters
+          .locationIds
+          .map((id) => allLocations.firstWhere((l) => l.id == id))
+          .toList();
+
+      final DateTime finalStart = savedFilters.startDate ?? today;
+      final DateTime? finalEnd = savedFilters.endDate;
+
+      if (!isClosed) {
+        emit(
+          _asReady(state).copyWith(
+            isLoadingOrganization: false,
+            allProviders: allProviders,
+            allMedicalAssistants: allMAs,
+            allOfficeLocations: allLocations,
+            allVisitTypes: allVisitTypes,
+            selectedProviders: selectedProviders,
+            selectedMedicalAssistants: selectedMAs,
+            selectedOfficeLocations: selectedLocations,
+            selectedStatuses: savedFilters.status,
+            startDate: finalStart,
+            endDate: finalEnd,
+            clearRange: finalEnd == null,
+            displayLabel: _computeDisplayLabel(finalStart, finalEnd),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!isClosed) {
+        emit(
+          _asReady(state).copyWith(
+            isLoadingOrganization: false,
+            errorMessage: e.toString(),
+          ),
+        );
+      }
+    }
   }
 
   void _onDateForward(
@@ -82,35 +170,35 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     HomeScreenDateSelected event,
     Emitter<HomeScreenState> emit,
   ) {
+    if (state is! HomeScreenReady) return;
     final HomeScreenReady current = _asReady(state);
     final DateTime start = DateTime(
       event.start.year,
       event.start.month,
       event.start.day,
     );
-    if (event.end == null) {
+    final DateTime? end = event.end != null
+        ? DateTime(event.end!.year, event.end!.month, event.end!.day)
+        : null;
+
+    if (current.activeEndDrawer == HomeScreenEndDrawerKind.filter) {
+      emit(
+        current.copyWith(
+          draftStartDate: start,
+          draftEndDate: end,
+          clearDraftRange: end == null,
+        ),
+      );
+    } else {
       emit(
         current.copyWith(
           startDate: start,
-          endDate: null,
-          clearRange: true,
-          displayLabel: _computeDisplayLabel(start, null),
+          endDate: end,
+          clearRange: end == null,
+          displayLabel: _computeDisplayLabel(start, end),
         ),
       );
-      return;
     }
-    final DateTime end = DateTime(
-      event.end!.year,
-      event.end!.month,
-      event.end!.day,
-    );
-    emit(
-      current.copyWith(
-        startDate: start,
-        endDate: end,
-        displayLabel: _computeDisplayLabel(start, end),
-      ),
-    );
   }
 
   void _onFilterPanelOpened(
@@ -122,6 +210,13 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
       current.copyWith(
         activeEndDrawer: HomeScreenEndDrawerKind.filter,
         signalOpenEndDrawer: true,
+        draftStartDate: current.startDate,
+        draftEndDate: current.endDate,
+        clearDraftRange: current.endDate == null,
+        draftStatuses: List.from(current.selectedStatuses),
+        draftProviders: List.from(current.selectedProviders),
+        draftMedicalAssistants: List.from(current.selectedMedicalAssistants),
+        draftOfficeLocations: List.from(current.selectedOfficeLocations),
       ),
     );
   }
@@ -155,6 +250,162 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     emit(current.copyWith(searchQuery: event.query));
   }
 
+  void _onErrorMessageConsumed(
+    HomeScreenErrorMessageConsumed event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      emit(_asReady(state).copyWith(clearErrorMessage: true));
+    }
+  }
+
+  void _onSuccessMessageConsumed(
+    HomeScreenSuccessMessageConsumed event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      emit(_asReady(state).copyWith(clearSuccessMessage: true));
+    }
+  }
+
+  void _onFilterStatusChanged(
+    HomeScreenFilterStatusChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      final current = _asReady(state);
+      if (current.activeEndDrawer == HomeScreenEndDrawerKind.filter) {
+        emit(current.copyWith(draftStatuses: event.statuses));
+      } else {
+        emit(current.copyWith(selectedStatuses: event.statuses));
+        _syncFiltersToApi(current.copyWith(selectedStatuses: event.statuses));
+      }
+    }
+  }
+
+  void _onFilterProviderChanged(
+    HomeScreenFilterProviderChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      final current = _asReady(state);
+      if (current.activeEndDrawer == HomeScreenEndDrawerKind.filter) {
+        emit(current.copyWith(draftProviders: event.providers));
+      } else {
+        emit(current.copyWith(selectedProviders: event.providers));
+        _syncFiltersToApi(current.copyWith(selectedProviders: event.providers));
+      }
+    }
+  }
+
+  void _onFilterMedicalAssistantChanged(
+    HomeScreenFilterMedicalAssistantChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      final current = _asReady(state);
+      if (current.activeEndDrawer == HomeScreenEndDrawerKind.filter) {
+        emit(current.copyWith(draftMedicalAssistants: event.medicalAssistants));
+      } else {
+        final next = current.copyWith(
+          selectedMedicalAssistants: event.medicalAssistants,
+        );
+        emit(next);
+        _syncFiltersToApi(next);
+      }
+    }
+  }
+
+  void _onFilterOfficeLocationChanged(
+    HomeScreenFilterOfficeLocationChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      final current = _asReady(state);
+      if (current.activeEndDrawer == HomeScreenEndDrawerKind.filter) {
+        emit(current.copyWith(draftOfficeLocations: event.locations));
+      } else {
+        emit(current.copyWith(selectedOfficeLocations: event.locations));
+        _syncFiltersToApi(
+          current.copyWith(selectedOfficeLocations: event.locations),
+        );
+      }
+    }
+  }
+
+  void _onFilterClearAll(
+    HomeScreenFilterClearAll event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      final current = _asReady(state);
+      final DateTime today = todayDateOnly(() => DateTime.now());
+      if (current.activeEndDrawer == HomeScreenEndDrawerKind.filter) {
+        emit(
+          current.copyWith(
+            draftStartDate: today,
+            draftEndDate: null,
+            clearDraftRange: true,
+            draftStatuses: [],
+            draftProviders: [],
+            draftMedicalAssistants: [],
+            draftOfficeLocations: [],
+            isCalendarVisible: false,
+          ),
+        );
+      } else {
+        final next = current.copyWith(
+          startDate: today,
+          endDate: null,
+          clearRange: true,
+          displayLabel: _computeDisplayLabel(today, null),
+          selectedStatuses: [],
+          selectedProviders: [],
+          selectedMedicalAssistants: [],
+          selectedOfficeLocations: [],
+          isCalendarVisible: false,
+        );
+        emit(next);
+        _syncFiltersToApi(next);
+      }
+    }
+  }
+
+  void _onFilterCalendarVisibilityToggled(
+    HomeScreenFilterCalendarVisibilityToggled event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      final HomeScreenReady current = _asReady(state);
+      emit(current.copyWith(isCalendarVisible: !current.isCalendarVisible));
+    }
+  }
+
+  void _onFilterPanelClosed(
+    HomeScreenFilterPanelClosed event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    if (state is HomeScreenReady) {
+      final current = _asReady(state);
+      final next = current.copyWith(
+        startDate: current.draftStartDate,
+        endDate: current.draftEndDate,
+        clearRange: current.draftEndDate == null,
+        displayLabel: _computeDisplayLabel(
+          current.draftStartDate,
+          current.draftEndDate,
+        ),
+        selectedStatuses: current.draftStatuses,
+        selectedProviders: current.draftProviders,
+        selectedMedicalAssistants: current.draftMedicalAssistants,
+        selectedOfficeLocations: current.draftOfficeLocations,
+        clearActiveEndDrawer: true,
+      );
+      emit(next);
+      _syncFiltersToApi(next);
+    }
+  }
+
   HomeScreenReady _asReady(HomeScreenState s) {
     return switch (s) {
       HomeScreenReady() => s,
@@ -171,5 +422,30 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
       yesterdayLabel: AppStrings.homeScheduleDateYesterday,
       tomorrowLabel: AppStrings.homeScheduleDateTomorrow,
     );
+  }
+
+  Future<void> _syncFiltersToApi(HomeScreenReady readyState) async {
+    final filters = SavedVisitFilters(
+      status: readyState.selectedStatuses,
+      doctorIds: readyState.selectedProviders.map((p) => p.id).toList(),
+      maIds: readyState.selectedMedicalAssistants.map((m) => m.id).toList(),
+      locationIds: readyState.selectedOfficeLocations.map((l) => l.id).toList(),
+      startDate: readyState.startDate,
+      endDate: readyState.endDate,
+    );
+
+    try {
+      final response = await homeRepository.updateSavedVisitFilters(filters);
+      final bool shouldToast = response['toast'] == true;
+      final String? message = response['message'] as String?;
+
+      if (!isClosed && shouldToast && message != null && message.isNotEmpty) {
+        emit(readyState.copyWith(successMessage: message));
+      }
+    } catch (e) {
+      if (!isClosed) {
+        emit(readyState.copyWith(errorMessage: e.toString()));
+      }
+    }
   }
 }

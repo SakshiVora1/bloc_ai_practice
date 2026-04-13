@@ -38,7 +38,7 @@ class DateSelectorWidget extends StatelessWidget {
 }
 
 class DatePill extends StatelessWidget {
-  const DatePill({required this.label, this.onTap});
+  const DatePill({super.key, required this.label, this.onTap});
 
   final String label;
   final VoidCallback? onTap;

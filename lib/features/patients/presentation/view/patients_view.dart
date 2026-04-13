@@ -27,6 +27,12 @@ class _PatientsViewState extends State<PatientsView> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    context.read<PatientsScreenBloc>().add(const PatientsScreenStarted());
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
+import 'package:subqdocs_bloc/features/home/presentation/widgets/home_filter_summary.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/home_schedule_sections_scroll.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/home_schedule_top_section.dart';
 
@@ -20,7 +21,8 @@ class HomeBodyContent extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(16, 20, 16, 0),
               child: HomeScheduleTopSection(),
             ),
-            const SizedBox(height: 16),
+            const HomeFilterSummary(),
+            const SizedBox(height: 8),
             Expanded(
               child: Stack(
                 clipBehavior: Clip.none,
