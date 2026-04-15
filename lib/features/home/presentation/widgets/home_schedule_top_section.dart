@@ -21,12 +21,102 @@ class HomeScheduleTopSection extends StatefulWidget {
 class _HomeScheduleTopSectionState extends State<HomeScheduleTopSection> {
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final bool isNarrow = screenWidth < 650;
+
     return BlocBuilder<HomeScreenBloc, HomeScreenState>(
       builder: (BuildContext context, HomeScreenState state) {
         if (state is! HomeScreenReady) {
           return const SizedBox.shrink();
         }
         final HomeScreenReady scheduleState = state;
+        
+        final Widget dateSelector = DateSelectorWidget(
+          displayLabel: scheduleState.displayLabel,
+          onPrevious: () => context.read<HomeScreenBloc>().add(
+            const HomeScreenDateBackward(),
+          ),
+          onNext: () => context.read<HomeScreenBloc>().add(
+            const HomeScreenDateForward(),
+          ),
+          centerWidget: PopupMenuButton<void>(
+            offset: const Offset(0, 6),
+            position: PopupMenuPosition.under,
+            tooltip: "",
+            elevation: 12,
+            color: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            itemBuilder: (BuildContext context) =>
+                <PopupMenuEntry<void>>[
+              buildScheduleDatePopupMenuEntry(
+                initialStart: scheduleState.startDate ?? DateTime.now(),
+                initialEnd: scheduleState.endDate,
+                onCommitted: (DateTime start, DateTime? end) {
+                  context.read<HomeScreenBloc>().add(
+                    HomeScreenDateSelected(start: start, end: end),
+                  );
+                },
+              ),
+            ],
+            child: DatePill(label: scheduleState.displayLabel),
+          ),
+        );
+
+        final Widget actionsRow = Row(
+          mainAxisSize: isNarrow ? MainAxisSize.max : MainAxisSize.min,
+          children: <Widget>[
+            Expanded(
+              flex: isNarrow ? 1 : 0,
+              child: SearchBarWidget(
+                hintText: AppStrings.homeScheduleSearchHint,
+                onChanged: (String q) => context
+                    .read<HomeScreenBloc>()
+                    .add(HomeScreenSearchQueryChanged(q)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            CommonButton(
+              label: "",
+              height: 40,
+              borderRadius: 6,
+              icon: SvgPicture.asset(
+                AppAssets.filterLogo,
+                width: 20,
+                height: 20,
+              ),
+              backgroundColor: AppColors.white,
+              borderColor: AppColors.fieldBorder,
+              padding: const EdgeInsets.all(10),
+              elevation: 0,
+              onPressed: () => context.read<HomeScreenBloc>().add(
+                const HomeScreenFilterPanelOpened(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            CommonButton(
+              label: isNarrow ? "" : AppStrings.homeScheduleVisit,
+              height: 40,
+              borderRadius: 6,
+              backgroundColor: AppColors.scheduleVisitAccent,
+              textColor: AppColors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              padding: EdgeInsets.symmetric(horizontal: isNarrow ? 10 : 14),
+              elevation: 0,
+              icon: SvgPicture.asset(
+                AppAssets.calendarWhite,
+                width: 20,
+                height: 20,
+              ),
+              onPressed: () => context.read<HomeScreenBloc>().add(
+                const HomeScreenScheduleVisitOpened(),
+              ),
+            ),
+          ],
+        );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -35,94 +125,19 @@ class _HomeScheduleTopSectionState extends State<HomeScheduleTopSection> {
               style: AppFonts.medium(16, AppColors.primaryText),
             ),
             const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                DateSelectorWidget(
-                  displayLabel: scheduleState.displayLabel,
-                  onPrevious: () => context.read<HomeScreenBloc>().add(
-                    const HomeScreenDateBackward(),
-                  ),
-                  onNext: () => context.read<HomeScreenBloc>().add(
-                    const HomeScreenDateForward(),
-                  ),
-                  centerWidget: PopupMenuButton<void>(
-                    offset: const Offset(0, 6),
-                    position: PopupMenuPosition.under,
-                    tooltip: "",
-                    elevation: 12,
-                    color: AppColors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<void>>[
-                      buildScheduleDatePopupMenuEntry(
-                        initialStart: scheduleState.startDate ?? DateTime.now(),
-                        initialEnd: scheduleState.endDate,
-                        onCommitted: (DateTime start, DateTime? end) {
-                          context.read<HomeScreenBloc>().add(
-                            HomeScreenDateSelected(start: start, end: end),
-                          );
-                        },
-                      ),
-                    ],
-                    child: DatePill(label: scheduleState.displayLabel),
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    SearchBarWidget(
-                      hintText: AppStrings.homeScheduleSearchHint,
-                      onChanged: (String q) => context
-                          .read<HomeScreenBloc>()
-                          .add(HomeScreenSearchQueryChanged(q)),
-                    ),
-                    const SizedBox(width: 8),
-                    CommonButton(
-                      label: "",
-                      height: 40,
-                      borderRadius: 6,
-                      icon: SvgPicture.asset(
-                        AppAssets.filterLogo,
-                        width: 20,
-                        height: 20,
-                      ),
-                      backgroundColor: AppColors.white,
-                      borderColor: AppColors.fieldBorder,
-                      padding:  EdgeInsets.all(10),
-                      elevation: 0,
-                      onPressed: () => context.read<HomeScreenBloc>().add(
-                        const HomeScreenFilterPanelOpened(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    CommonButton(
-                      label: AppStrings.homeScheduleVisit,
-                      height: 40,
-                      borderRadius: 6,
-                      backgroundColor: AppColors.scheduleVisitAccent,
-                      textColor: AppColors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      elevation: 0,
-                      icon: SvgPicture.asset(
-                        AppAssets.calendarWhite,
-                        width: 20,
-                        height: 20,
-                      ),
-                      onPressed: () => context.read<HomeScreenBloc>().add(
-                        const HomeScreenScheduleVisitOpened(),
-                      ),
-                    ),
-                  ],
-                ),
-
-
-              ],
-            ),
+            if (isNarrow) ...[
+              dateSelector,
+              const SizedBox(height: 12),
+              actionsRow,
+            ] else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  dateSelector,
+                  actionsRow,
+                ],
+              ),
           ],
         );
       },

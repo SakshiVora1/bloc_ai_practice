@@ -15,11 +15,10 @@ class HomeFilterSummary extends StatelessWidget {
       builder: (context, state) {
         if (state is! HomeScreenReady) return const SizedBox.shrink();
 
-        final hasStatus = state.selectedStatuses.isNotEmpty;
-        final hasDoctors = state.selectedProviders.isNotEmpty;
-        final hasMAs = state.selectedMedicalAssistants.isNotEmpty;
-        final hasLocations = state.selectedOfficeLocations.isNotEmpty;
-        final hasDateRange = state.endDate != null && 
+        final bool hasStatus = state.selectedStatuses.isNotEmpty;
+        final bool hasDoctors = state.selectedProviders.isNotEmpty;
+        final bool hasLocations = state.selectedOfficeLocations.isNotEmpty;
+        final bool hasDateRange = state.endDate != null && 
             !_isSameDaySummary(state.startDate, state.endDate!);
 
         if (!hasStatus &&

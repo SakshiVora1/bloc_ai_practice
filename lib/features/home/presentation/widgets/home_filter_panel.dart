@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
-import 'package:subqdocs_bloc/core/models/organization_singleton.dart';
 import 'package:subqdocs_bloc/features/home/presentation/bloc/home_screen_bloc.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/filter_header.dart';
 import 'package:subqdocs_bloc/features/home/presentation/widgets/filter_date_selector.dart';

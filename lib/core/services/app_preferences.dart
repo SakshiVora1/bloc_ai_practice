@@ -60,6 +60,10 @@ class AppPreferences {
     return _safePrefs.getString(key);
   }
 
+  String? getStringSync(String key) {
+    return _prefs?.getString(key);
+  }
+
   Future<int?> getInt(String key) async {
     await initialize();
     return _safePrefs.getInt(key);

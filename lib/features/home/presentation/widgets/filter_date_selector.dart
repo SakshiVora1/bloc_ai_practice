@@ -1,10 +1,10 @@
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
+import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 import 'package:subqdocs_bloc/features/home/presentation/bloc/home_screen_bloc.dart';
 import 'package:subqdocs_bloc/widgets/common_text_form_field.dart';
 
@@ -53,11 +53,10 @@ class FilterDateSelector extends StatelessWidget {
 
   String _formatDateRange(DateTime? start, DateTime? end) {
     if (start == null) return '';
-    final DateFormat formatter = DateFormat('MM/dd/yyyy');
     if (end == null || _isSameDay(start, end)) {
-      return formatter.format(start);
+      return formatDateMmDdYyyy(start);
     }
-    return '${formatter.format(start)} - ${formatter.format(end)}';
+    return '${formatDateMmDdYyyy(start)} - ${formatDateMmDdYyyy(end)}';
   }
 
   bool _isSameDay(DateTime d1, DateTime d2) {
@@ -68,7 +67,7 @@ class FilterDateSelector extends StatelessWidget {
     return CalendarDatePicker2(
       config: CalendarDatePicker2Config(
         calendarType: CalendarDatePicker2Type.range,
-        selectedDayHighlightColor: const Color(0xFF4A4ADE),
+        selectedDayHighlightColor: AppColors.scheduleVisitAccent,
       ),
       value: [
         state.draftStartDate,

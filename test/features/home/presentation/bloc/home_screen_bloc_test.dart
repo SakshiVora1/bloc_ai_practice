@@ -10,6 +10,7 @@ import 'package:subqdocs_bloc/data/models/office_location_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_model.dart';
 import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
+import 'package:subqdocs_bloc/features/patients/data/patients_list_api_envelope.dart';
 
 class _MockHomeRepository implements HomeRepository {
   @override
@@ -45,6 +46,26 @@ class _MockHomeRepository implements HomeRepository {
     SavedVisitFilters filters,
   ) async {
     return {'toast': true, 'message': 'Success'};
+  }
+
+  @override
+  Future<PatientsListApiEnvelope> fetchPatients({
+    required int page,
+    required int limit,
+    String search = '',
+    List<Map<String, dynamic>> sorting = const <Map<String, dynamic>>[],
+  }) async {
+    return const PatientsListApiEnvelope(
+      responseType: 'success',
+      message: null,
+      responseData: PatientsListPageData(
+        rows: [],
+        totalCount: 0,
+        totalPage: 1,
+        page: 1,
+        limit: 15,
+      ),
+    );
   }
 
   @override

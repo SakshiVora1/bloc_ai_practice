@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
+import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
+import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 
 class FilterHeader extends StatelessWidget {
   const FilterHeader({
@@ -14,19 +15,19 @@ class FilterHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 50,
-      color: const Color(0xFF4A4ADE),
+      color: AppColors.scheduleVisitAccent,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Filter',
+            AppStrings.homeEndDrawerFilterTitle,
             style: AppFonts.medium(16, AppColors.white),
           ),
           InkWell(
             onTap: onClearTap,
             child: Text(
-              'clear',
+              AppStrings.homeFilterClearAll,
               style: AppFonts.medium(14, AppColors.white),
             ),
           ),

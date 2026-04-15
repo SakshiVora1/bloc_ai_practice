@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'dart:convert';
 import 'package:subqdocs_bloc/core/constants/app_preferences_keys.dart';
 import 'package:subqdocs_bloc/core/services/api_exceptions.dart';
 import 'package:subqdocs_bloc/core/services/api_service.dart';
@@ -11,11 +14,12 @@ import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_model.dart';
 import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
 import 'package:subqdocs_bloc/features/home/domain/repositories/home_repository.dart';
+import 'package:subqdocs_bloc/features/patients/data/patients_list_api_envelope.dart';
 
 final class HomeRepositoryImpl implements HomeRepository {
   HomeRepositoryImpl({ApiService? apiService, AppPreferences? preferences})
-      : _apiService = apiService ?? ApiService(),
-        _preferences = preferences ?? AppPreferences.instance;
+    : _apiService = apiService ?? ApiService(),
+      _preferences = preferences ?? AppPreferences.instance;
 
   final ApiService _apiService;
   final AppPreferences _preferences;
@@ -29,7 +33,10 @@ final class HomeRepositoryImpl implements HomeRepository {
       throw const UnauthorizedApiException(message: 'No active session');
     }
 
-    final dynamic data = await _apiService.get(organizationPath, bearerToken: bearer);
+    final dynamic data = await _apiService.get(
+      organizationPath,
+      bearerToken: bearer,
+    );
     if (data is! Map) {
       throw const ParseApiException(
         message: 'Organization API returned non-object response',
@@ -42,7 +49,9 @@ final class HomeRepositoryImpl implements HomeRepository {
           message: 'Organization API missing responseData object',
         );
       }
-      return OrganizationModel.fromJson(Map<String, dynamic>.from(responseData));
+      return OrganizationModel.fromJson(
+        Map<String, dynamic>.from(responseData),
+      );
     } on FormatException catch (e) {
       throw ParseApiException(message: e.message);
     }
@@ -63,14 +72,20 @@ final class HomeRepositoryImpl implements HomeRepository {
       bearerToken: bearer,
     );
     if (data is! Map) {
-      throw const ParseApiException(message: 'getUsersByRole API returned non-object response');
+      throw const ParseApiException(
+        message: 'getUsersByRole API returned non-object response',
+      );
     }
     final dynamic responseData = data['responseData'];
     if (responseData == null || responseData is! List) {
-      throw const ParseApiException(message: 'getUsersByRole API missing or invalid responseData');
+      throw const ParseApiException(
+        message: 'getUsersByRole API missing or invalid responseData',
+      );
     }
     try {
-      return responseData.map((e) => StaffModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      return responseData
+          .map((e) => StaffModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
     } on FormatException catch (e) {
       throw ParseApiException(message: e.message);
     }
@@ -85,16 +100,29 @@ final class HomeRepositoryImpl implements HomeRepository {
       throw const UnauthorizedApiException(message: 'No active session');
     }
 
-    final dynamic data = await _apiService.get(officeLocationsPath, bearerToken: bearer);
+    final dynamic data = await _apiService.get(
+      officeLocationsPath,
+      bearerToken: bearer,
+    );
     if (data is! Map) {
-      throw const ParseApiException(message: 'office-locations API returned non-object response');
+      throw const ParseApiException(
+        message: 'office-locations API returned non-object response',
+      );
     }
     final dynamic responseData = data['responseData'];
     if (responseData == null || responseData is! List) {
-      throw const ParseApiException(message: 'office-locations API missing or invalid responseData');
+      throw const ParseApiException(
+        message: 'office-locations API missing or invalid responseData',
+      );
     }
     try {
-      return responseData.map((e) => OfficeLocationModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      return responseData
+          .map(
+            (e) => OfficeLocationModel.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
+          .toList();
     } on FormatException catch (e) {
       throw ParseApiException(message: e.message);
     }
@@ -103,7 +131,10 @@ final class HomeRepositoryImpl implements HomeRepository {
   static const String visitTypesPath = 'visit-types';
 
   @override
-  Future<List<VisitTypeModel>> getVisitTypes({int limit = 50, bool isVisibleToUser = true}) async {
+  Future<List<VisitTypeModel>> getVisitTypes({
+    int limit = 50,
+    bool isVisibleToUser = true,
+  }) async {
     final String? bearer = await _sessionBearerToken();
     if (bearer == null || bearer.isEmpty) {
       throw const UnauthorizedApiException(message: 'No active session');
@@ -111,31 +142,39 @@ final class HomeRepositoryImpl implements HomeRepository {
 
     final dynamic data = await _apiService.get(
       visitTypesPath,
-      queryParameters: {
-        'limit': limit,
-        'is_visible_to_user': isVisibleToUser,
-      },
+      queryParameters: {'limit': limit, 'is_visible_to_user': isVisibleToUser},
       bearerToken: bearer,
     );
     if (data is! Map) {
-      throw const ParseApiException(message: 'visit-types API returned non-object response');
+      throw const ParseApiException(
+        message: 'visit-types API returned non-object response',
+      );
     }
     final dynamic responseData = data['responseData'];
     if (responseData == null || responseData is! Map) {
-      throw const ParseApiException(message: 'visit-types API missing or invalid responseData object');
+      throw const ParseApiException(
+        message: 'visit-types API missing or invalid responseData object',
+      );
     }
     final dynamic visitTypesList = responseData['visit_types'];
     if (visitTypesList == null || visitTypesList is! List) {
-      throw const ParseApiException(message: 'visit-types API missing or invalid visit_types array');
+      throw const ParseApiException(
+        message: 'visit-types API missing or invalid visit_types array',
+      );
     }
     try {
-      return visitTypesList.map((e) => VisitTypeModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+      return visitTypesList
+          .map(
+            (e) => VisitTypeModel.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
     } on FormatException catch (e) {
       throw ParseApiException(message: e.message);
     }
   }
 
   static const String savedVisitFiltersPath = 'filters/visit';
+  static const String getAllPatientsPath = 'patient/getAllPatients';
 
   @override
   Future<SavedVisitFilters> getSavedVisitFilters() async {
@@ -144,23 +183,34 @@ final class HomeRepositoryImpl implements HomeRepository {
       throw const UnauthorizedApiException(message: 'No active session');
     }
 
-    final dynamic data = await _apiService.get(savedVisitFiltersPath, bearerToken: bearer);
+    final dynamic data = await _apiService.get(
+      savedVisitFiltersPath,
+      bearerToken: bearer,
+    );
     if (data is! Map) {
-      throw const ParseApiException(message: 'filters/visit API returned non-object response');
+      throw const ParseApiException(
+        message: 'filters/visit API returned non-object response',
+      );
     }
     final dynamic responseData = data['responseData'];
     if (responseData == null || responseData is! Map) {
-      throw const ParseApiException(message: 'filters/visit API missing responseData object');
+      throw const ParseApiException(
+        message: 'filters/visit API missing responseData object',
+      );
     }
     try {
-      return SavedVisitFilters.fromJson(Map<String, dynamic>.from(responseData));
+      return SavedVisitFilters.fromJson(
+        Map<String, dynamic>.from(responseData),
+      );
     } on FormatException catch (e) {
       throw ParseApiException(message: e.message);
     }
   }
 
   @override
-  Future<Map<String, dynamic>> updateSavedVisitFilters(SavedVisitFilters filters) async {
+  Future<Map<String, dynamic>> updateSavedVisitFilters(
+    SavedVisitFilters filters,
+  ) async {
     final String? bearer = await _sessionBearerToken();
     if (bearer == null || bearer.isEmpty) {
       throw const UnauthorizedApiException(message: 'No active session');
@@ -172,9 +222,52 @@ final class HomeRepositoryImpl implements HomeRepository {
       bearerToken: bearer,
     );
     if (data is! Map) {
-      throw const ParseApiException(message: 'filters/visit API returned non-object response');
+      throw const ParseApiException(
+        message: 'filters/visit API returned non-object response',
+      );
     }
     return Map<String, dynamic>.from(data);
+  }
+
+  @override
+  Future<PatientsListApiEnvelope> fetchPatients({
+    required int page,
+    required int limit,
+    String search = '',
+    List<Map<String, dynamic>> sorting = const <Map<String, dynamic>>[],
+  }) async {
+    final String? bearer = await _sessionBearerToken();
+    if (bearer == null || bearer.isEmpty) {
+      throw const UnauthorizedApiException(message: 'No active session');
+    }
+
+    final Map<String, dynamic> query = <String, dynamic>{
+      'page': page,
+      'limit': limit,
+    };
+    final String trimmedSearch = search.trim();
+    if (trimmedSearch.isNotEmpty) {
+      query['search'] = trimmedSearch;
+    }
+    if (sorting.isNotEmpty) {
+      query['sorting'] = jsonEncode(sorting);
+    }
+
+    final dynamic data = await _apiService.get(
+      getAllPatientsPath,
+      queryParameters: query,
+      bearerToken: bearer,
+    );
+    if (data is! Map) {
+      throw const ParseApiException(
+        message: 'Patients API returned non-object response',
+      );
+    }
+    try {
+      return PatientsListApiEnvelope.fromJson(Map<String, dynamic>.from(data));
+    } on FormatException catch (e) {
+      throw ParseApiException(message: e.message);
+    }
   }
 
   static const String currentVisitsPath = 'patient/visits/current';
@@ -219,12 +312,19 @@ final class HomeRepositoryImpl implements HomeRepository {
       throw const UnauthorizedApiException(message: 'No active session');
     }
 
-    final String timezone = (await FlutterTimezone.getLocalTimezone()).identifier;
-    
+    final String timezone =
+        (await FlutterTimezone.getLocalTimezone()).identifier;
+
     // Construct query parameters as requested
     final Map<String, dynamic> params = {
-      'dateRange[startDate]': filters.startDate != null ? formatYyyyMmDd(filters.startDate!) : formatYyyyMmDd(DateTime.now()),
-      'dateRange[endDate]': filters.endDate != null ? formatYyyyMmDd(filters.endDate!) : (filters.startDate != null ? formatYyyyMmDd(filters.startDate!) : formatYyyyMmDd(DateTime.now())),
+      'dateRange[startDate]': filters.startDate != null
+          ? formatYyyyMmDd(filters.startDate!)
+          : formatYyyyMmDd(DateTime.now()),
+      'dateRange[endDate]': filters.endDate != null
+          ? formatYyyyMmDd(filters.endDate!)
+          : (filters.startDate != null
+                ? formatYyyyMmDd(filters.startDate!)
+                : formatYyyyMmDd(DateTime.now())),
       'timezone': timezone,
       'page': page,
       'limit': limit,
@@ -240,16 +340,19 @@ final class HomeRepositoryImpl implements HomeRepository {
       params['doctorsName[]'] = filters.doctorIds;
     }
 
+    log("Parameters : $params");
     final dynamic data = await _apiService.get(
       path,
       queryParameters: params,
       bearerToken: bearer,
     );
-    
+
     if (data is! Map) {
-      throw const ParseApiException(message: 'Visits API returned non-object response');
+      throw const ParseApiException(
+        message: 'Visits API returned non-object response',
+      );
     }
-    
+
     try {
       return VisitListResponse.fromJson(Map<String, dynamic>.from(data));
     } on FormatException catch (e) {
@@ -258,8 +361,6 @@ final class HomeRepositoryImpl implements HomeRepository {
   }
 
   Future<String?> _sessionBearerToken() async {
-    return _preferences.getString(
-      AppPreferencesKeys.bearerToken,
-    );
+    return _preferences.getString(AppPreferencesKeys.bearerToken);
   }
 }

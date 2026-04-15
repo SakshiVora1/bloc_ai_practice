@@ -30,7 +30,10 @@ class _HomeViewState extends State<HomeView> {
     return BlocListener<HomeScreenBloc, HomeScreenState>(
       listenWhen: (HomeScreenState p, HomeScreenState c) {
         if (c is! HomeScreenReady) return false;
-        return c.signalOpenEndDrawer || (c.errorMessage != null);
+        final HomeScreenReady prev = p is HomeScreenReady ? p : const HomeScreenReady(startDate: null, displayLabel: '');
+        return c.signalOpenEndDrawer ||
+            (c.errorMessage != null && c.errorMessage != prev.errorMessage) ||
+            (c.successMessage != null && c.successMessage != prev.successMessage);
       },
       listener: (BuildContext context, HomeScreenState state) {
         final HomeScreenReady ready = state as HomeScreenReady;
@@ -56,12 +59,23 @@ class _HomeViewState extends State<HomeView> {
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: AppColors.scaffoldWhite,
-        appBar: CommonUserAppBar(),
+        appBar: const CommonUserAppBar(),
         drawer: const CommonAppDrawer(selectedItem: AppDrawerItem.schedule),
         endDrawer: const HomeEndDrawer(),
-        onEndDrawerChanged: (isOpened) {
+        onEndDrawerChanged: (bool isOpened) {
           if (!isOpened) {
-            context.read<HomeScreenBloc>().add(const HomeScreenFilterPanelClosed());
+            // Only apply filter logic when the filter drawer was active.
+            // Closing the Schedule Visit drawer must not trigger filter
+            // sync or overwrite the active date/filter state.
+            final HomeScreenState current =
+                context.read<HomeScreenBloc>().state;
+            final bool isFilterDrawer = current is HomeScreenReady &&
+                current.activeEndDrawer == HomeScreenEndDrawerKind.filter;
+            if (isFilterDrawer) {
+              context
+                  .read<HomeScreenBloc>()
+                  .add(const HomeScreenFilterPanelClosed());
+            }
           }
         },
         body: const HomeBodyContent(),

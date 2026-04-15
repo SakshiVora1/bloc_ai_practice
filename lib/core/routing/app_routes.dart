@@ -40,8 +40,7 @@ abstract final class AppRoutes {
       child: const PatientsView(),
     ),
     RouteNames.settings: (BuildContext context) => BlocProvider(
-      create: (_) =>
-          SettingsBloc(settingsRepository: SettingsRepositoryImpl()),
+      create: (_) => SettingsBloc(settingsRepository: SettingsRepositoryImpl()),
       child: const SettingsView(),
     ),
     RouteNames.medicalRecord: (BuildContext context) {

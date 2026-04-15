@@ -97,3 +97,107 @@ final class HomeScreenRecordedVisitsRequested extends HomeScreenEvent {
   const HomeScreenRecordedVisitsRequested({this.isNextPage = false});
   final bool isNextPage;
 }
+
+final class HomeScreenScheduleVisitPatientDropdownOpened
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPatientDropdownOpened();
+}
+
+final class HomeScreenScheduleVisitPatientDropdownClosed
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPatientDropdownClosed();
+}
+
+final class HomeScreenScheduleVisitPatientSearchChanged
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPatientSearchChanged(this.query);
+
+  final String query;
+}
+
+final class HomeScreenScheduleVisitPatientSearchDebounced
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPatientSearchDebounced(this.query);
+
+  final String query;
+}
+
+final class HomeScreenScheduleVisitPatientSuggestionsRequested
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPatientSuggestionsRequested({
+    required this.query,
+    required this.completer,
+  });
+
+  final String query;
+  final Completer<List<PatientListRow>> completer;
+}
+
+final class HomeScreenScheduleVisitAddPatientSelected extends HomeScreenEvent {
+  const HomeScreenScheduleVisitAddPatientSelected();
+}
+
+final class HomeScreenScheduleVisitSearchExistingPatientSelected
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitSearchExistingPatientSelected();
+}
+
+final class HomeScreenScheduleVisitPatientSelected extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPatientSelected(this.patient);
+
+  final PatientListRow patient;
+}
+
+final class HomeScreenScheduleVisitFirstNameChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitFirstNameChanged(this.value);
+
+  final String value;
+}
+
+final class HomeScreenScheduleVisitLastNameChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitLastNameChanged(this.value);
+
+  final String value;
+}
+
+final class HomeScreenScheduleVisitOfficeLocationChanged
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitOfficeLocationChanged(this.location);
+  final OfficeLocationModel? location;
+}
+
+final class HomeScreenScheduleVisitProviderChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitProviderChanged(this.provider);
+  final StaffModel? provider;
+}
+
+final class HomeScreenScheduleVisitDateChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitDateChanged(this.date);
+  final DateTime? date;
+}
+
+final class HomeScreenScheduleVisitTimeChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitTimeChanged(this.time);
+  final DateTime? time;
+}
+
+final class HomeScreenScheduleVisitTypeChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitTypeChanged(this.visitType);
+  final VisitTypeModel? visitType;
+}
+
+final class HomeScreenScheduleVisitNoteChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitNoteChanged(this.note);
+  final String note;
+}
+
+final class HomeScreenScheduleVisitPaymentMethodChanged
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPaymentMethodChanged(this.method);
+  final String? method;
+}
+
+final class HomeScreenScheduleVisitReasonChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitReasonChanged(this.reason);
+  final String? reason;
+}

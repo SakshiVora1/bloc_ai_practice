@@ -64,8 +64,24 @@ final class HomeScreenReady extends HomeScreenState {
   final List<StaffModel> draftProviders;
   final List<StaffModel> draftMedicalAssistants;
   final List<OfficeLocationModel> draftOfficeLocations;
+  final String scheduleVisitPatientSearchQuery;
+  final bool scheduleVisitIsPatientSearchLoading;
+  final List<PatientListRow> scheduleVisitPatientResults;
+  final bool scheduleVisitShowPatientDropdown;
+  final bool scheduleVisitIsAddingPatient;
+  final PatientListRow? scheduleVisitSelectedPatient;
+  final String scheduleVisitFirstName;
+  final String scheduleVisitLastName;
+  final OfficeLocationModel? scheduleVisitOfficeLocation;
+  final StaffModel? scheduleVisitProvider;
+  final DateTime? scheduleVisitDate;
+  final DateTime? scheduleVisitTime;
+  final VisitTypeModel? scheduleVisitType;
+  final String scheduleVisitNote;
+  final String? scheduleVisitPaymentMethod;
+  final String? scheduleVisitReason;
 
-  HomeScreenReady({
+  const HomeScreenReady({
     required this.startDate,
     this.endDate,
     required this.displayLabel,
@@ -106,6 +122,22 @@ final class HomeScreenReady extends HomeScreenState {
     this.draftProviders = const [],
     this.draftMedicalAssistants = const [],
     this.draftOfficeLocations = const [],
+    this.scheduleVisitPatientSearchQuery = '',
+    this.scheduleVisitIsPatientSearchLoading = false,
+    this.scheduleVisitPatientResults = const [],
+    this.scheduleVisitShowPatientDropdown = false,
+    this.scheduleVisitIsAddingPatient = false,
+    this.scheduleVisitSelectedPatient,
+    this.scheduleVisitFirstName = '',
+    this.scheduleVisitLastName = '',
+    this.scheduleVisitOfficeLocation,
+    this.scheduleVisitProvider,
+    this.scheduleVisitDate,
+    this.scheduleVisitTime,
+    this.scheduleVisitType,
+    this.scheduleVisitNote = '',
+    this.scheduleVisitPaymentMethod,
+    this.scheduleVisitReason,
   });
 
   HomeScreenReady copyWith({
@@ -154,6 +186,30 @@ final class HomeScreenReady extends HomeScreenState {
     List<StaffModel>? draftProviders,
     List<StaffModel>? draftMedicalAssistants,
     List<OfficeLocationModel>? draftOfficeLocations,
+    String? scheduleVisitPatientSearchQuery,
+    bool? scheduleVisitIsPatientSearchLoading,
+    List<PatientListRow>? scheduleVisitPatientResults,
+    bool? scheduleVisitShowPatientDropdown,
+    bool? scheduleVisitIsAddingPatient,
+    PatientListRow? scheduleVisitSelectedPatient,
+    bool clearScheduleVisitSelectedPatient = false,
+    String? scheduleVisitFirstName,
+    String? scheduleVisitLastName,
+    OfficeLocationModel? scheduleVisitOfficeLocation,
+    bool clearScheduleVisitOfficeLocation = false,
+    StaffModel? scheduleVisitProvider,
+    bool clearScheduleVisitProvider = false,
+    DateTime? scheduleVisitDate,
+    bool clearScheduleVisitDate = false,
+    DateTime? scheduleVisitTime,
+    bool clearScheduleVisitTime = false,
+    VisitTypeModel? scheduleVisitType,
+    bool clearScheduleVisitType = false,
+    String? scheduleVisitNote,
+    String? scheduleVisitPaymentMethod,
+    bool clearScheduleVisitPaymentMethod = false,
+    String? scheduleVisitReason,
+    bool clearScheduleVisitReason = false,
   }) {
     return HomeScreenReady(
       startDate: startDate ?? this.startDate,
@@ -164,12 +220,15 @@ final class HomeScreenReady extends HomeScreenState {
           : (activeEndDrawer ?? this.activeEndDrawer),
       signalOpenEndDrawer: signalOpenEndDrawer ?? this.signalOpenEndDrawer,
       searchQuery: searchQuery ?? this.searchQuery,
-      isLoadingOrganization: isLoadingOrganization ?? this.isLoadingOrganization,
+      isLoadingOrganization:
+          isLoadingOrganization ?? this.isLoadingOrganization,
       isLoadingVisits: isLoadingVisits ?? this.isLoadingVisits,
-      errorMessage:
-          clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
-      successMessage:
-          clearSuccessMessage ? null : (successMessage ?? this.successMessage),
+      errorMessage: clearErrorMessage
+          ? null
+          : (errorMessage ?? this.errorMessage),
+      successMessage: clearSuccessMessage
+          ? null
+          : (successMessage ?? this.successMessage),
       selectedStatuses: selectedStatuses ?? this.selectedStatuses,
       selectedProviders: selectedProviders ?? this.selectedProviders,
       selectedMedicalAssistants:
@@ -182,27 +241,76 @@ final class HomeScreenReady extends HomeScreenState {
       recordedVisits: recordedVisits ?? this.recordedVisits,
       pageCurrent: pageCurrent ?? this.pageCurrent,
       totalPageCurrent: totalPageCurrent ?? this.totalPageCurrent,
-      isFetchingMoreCurrent: isFetchingMoreCurrent ?? this.isFetchingMoreCurrent,
+      isFetchingMoreCurrent:
+          isFetchingMoreCurrent ?? this.isFetchingMoreCurrent,
       pageUpcoming: pageUpcoming ?? this.pageUpcoming,
       totalPageUpcoming: totalPageUpcoming ?? this.totalPageUpcoming,
-      isFetchingMoreUpcoming: isFetchingMoreUpcoming ?? this.isFetchingMoreUpcoming,
+      isFetchingMoreUpcoming:
+          isFetchingMoreUpcoming ?? this.isFetchingMoreUpcoming,
       pageRecorded: pageRecorded ?? this.pageRecorded,
       totalPageRecorded: totalPageRecorded ?? this.totalPageRecorded,
-      isFetchingMoreRecorded: isFetchingMoreRecorded ?? this.isFetchingMoreRecorded,
+      isFetchingMoreRecorded:
+          isFetchingMoreRecorded ?? this.isFetchingMoreRecorded,
       filteredCountCurrent: filteredCountCurrent ?? this.filteredCountCurrent,
-      filteredCountUpcoming: filteredCountUpcoming ?? this.filteredCountUpcoming,
-      filteredCountRecorded: filteredCountRecorded ?? this.filteredCountRecorded,
+      filteredCountUpcoming:
+          filteredCountUpcoming ?? this.filteredCountUpcoming,
+      filteredCountRecorded:
+          filteredCountRecorded ?? this.filteredCountRecorded,
       allProviders: allProviders ?? this.allProviders,
       allMedicalAssistants: allMedicalAssistants ?? this.allMedicalAssistants,
       allOfficeLocations: allOfficeLocations ?? this.allOfficeLocations,
       allVisitTypes: allVisitTypes ?? this.allVisitTypes,
       draftStartDate: draftStartDate ?? this.draftStartDate,
-      draftEndDate: clearDraftRange ? null : (draftEndDate ?? this.draftEndDate),
+      draftEndDate: clearDraftRange
+          ? null
+          : (draftEndDate ?? this.draftEndDate),
       draftStatuses: draftStatuses ?? this.draftStatuses,
       draftProviders: draftProviders ?? this.draftProviders,
       draftMedicalAssistants:
           draftMedicalAssistants ?? this.draftMedicalAssistants,
       draftOfficeLocations: draftOfficeLocations ?? this.draftOfficeLocations,
+      scheduleVisitPatientSearchQuery:
+          scheduleVisitPatientSearchQuery ??
+          this.scheduleVisitPatientSearchQuery,
+      scheduleVisitIsPatientSearchLoading:
+          scheduleVisitIsPatientSearchLoading ??
+          this.scheduleVisitIsPatientSearchLoading,
+      scheduleVisitPatientResults:
+          scheduleVisitPatientResults ?? this.scheduleVisitPatientResults,
+      scheduleVisitShowPatientDropdown:
+          scheduleVisitShowPatientDropdown ??
+          this.scheduleVisitShowPatientDropdown,
+      scheduleVisitIsAddingPatient:
+          scheduleVisitIsAddingPatient ?? this.scheduleVisitIsAddingPatient,
+      scheduleVisitSelectedPatient: clearScheduleVisitSelectedPatient
+          ? null
+          : (scheduleVisitSelectedPatient ?? this.scheduleVisitSelectedPatient),
+      scheduleVisitFirstName:
+          scheduleVisitFirstName ?? this.scheduleVisitFirstName,
+      scheduleVisitLastName:
+          scheduleVisitLastName ?? this.scheduleVisitLastName,
+      scheduleVisitOfficeLocation: clearScheduleVisitOfficeLocation
+          ? null
+          : (scheduleVisitOfficeLocation ?? this.scheduleVisitOfficeLocation),
+      scheduleVisitProvider: clearScheduleVisitProvider
+          ? null
+          : (scheduleVisitProvider ?? this.scheduleVisitProvider),
+      scheduleVisitDate: clearScheduleVisitDate
+          ? null
+          : (scheduleVisitDate ?? this.scheduleVisitDate),
+      scheduleVisitTime: clearScheduleVisitTime
+          ? null
+          : (scheduleVisitTime ?? this.scheduleVisitTime),
+      scheduleVisitType: clearScheduleVisitType
+          ? null
+          : (scheduleVisitType ?? this.scheduleVisitType),
+      scheduleVisitNote: scheduleVisitNote ?? this.scheduleVisitNote,
+      scheduleVisitPaymentMethod: clearScheduleVisitPaymentMethod
+          ? null
+          : (scheduleVisitPaymentMethod ?? this.scheduleVisitPaymentMethod),
+      scheduleVisitReason: clearScheduleVisitReason
+          ? null
+          : (scheduleVisitReason ?? this.scheduleVisitReason),
     );
   }
 }

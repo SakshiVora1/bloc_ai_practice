@@ -1,22 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
-import 'package:subqdocs_bloc/core/models/organization_singleton.dart';
-import 'package:subqdocs_bloc/features/home/domain/home_date_display.dart';
-import 'package:subqdocs_bloc/features/home/domain/repositories/home_repository.dart';
-import 'package:subqdocs_bloc/data/models/organization_model.dart';
-import 'package:subqdocs_bloc/data/models/staff_model.dart';
+import 'package:subqdocs_bloc/core/services/api_exceptions.dart';
+import 'package:subqdocs_bloc/core/services/app_preferences.dart';
+import 'package:subqdocs_bloc/data/models/login_model.dart';
 import 'package:subqdocs_bloc/data/models/office_location_model.dart';
+import 'package:subqdocs_bloc/data/models/staff_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_model.dart';
+import 'package:subqdocs_bloc/features/home/domain/home_date_display.dart';
 import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
+import 'package:subqdocs_bloc/features/home/domain/repositories/home_repository.dart';
+import 'package:subqdocs_bloc/features/patients/data/patient_list_row.dart';
+import 'package:subqdocs_bloc/features/patients/data/patients_list_api_envelope.dart';
+
+import '../../../../core/constants/app_preferences_keys.dart';
 
 part 'home_screen_event.dart';
 
 part 'home_screen_state.dart';
 
 class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
-  HomeScreenBloc({required this.homeRepository}) : super(const HomeScreenInitial()) {
+  HomeScreenBloc({required this.homeRepository})
+    : super(const HomeScreenInitial()) {
     on<HomeScreenStarted>(_onStarted);
     on<HomeScreenDateForward>(_onDateForward);
     on<HomeScreenDateBackward>(_onDateBackward);
@@ -41,10 +49,57 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     on<HomeScreenCurrentVisitsRequested>(_onCurrentVisitsRequested);
     on<HomeScreenUpcomingVisitsRequested>(_onUpcomingVisitsRequested);
     on<HomeScreenRecordedVisitsRequested>(_onRecordedVisitsRequested);
+    on<HomeScreenScheduleVisitPatientDropdownOpened>(
+      _onScheduleVisitPatientDropdownOpened,
+    );
+    on<HomeScreenScheduleVisitPatientDropdownClosed>(
+      _onScheduleVisitPatientDropdownClosed,
+    );
+    on<HomeScreenScheduleVisitPatientSearchChanged>(
+      _onScheduleVisitPatientSearchChanged,
+    );
+    on<HomeScreenScheduleVisitPatientSearchDebounced>(
+      _onScheduleVisitPatientSearchDebounced,
+    );
+    on<HomeScreenScheduleVisitPatientSuggestionsRequested>(
+      _onScheduleVisitPatientSuggestionsRequested,
+    );
+    on<HomeScreenScheduleVisitAddPatientSelected>(
+      _onScheduleVisitAddPatientSelected,
+    );
+    on<HomeScreenScheduleVisitSearchExistingPatientSelected>(
+      _onScheduleVisitSearchExistingPatientSelected,
+    );
+    on<HomeScreenScheduleVisitPatientSelected>(_onScheduleVisitPatientSelected);
+    on<HomeScreenScheduleVisitFirstNameChanged>(
+      _onScheduleVisitFirstNameChanged,
+    );
+    on<HomeScreenScheduleVisitLastNameChanged>(_onScheduleVisitLastNameChanged);
+    on<HomeScreenScheduleVisitOfficeLocationChanged>(
+      _onScheduleVisitOfficeLocationChanged,
+    );
+    on<HomeScreenScheduleVisitProviderChanged>(
+      _onScheduleVisitProviderChanged,
+    );
+    on<HomeScreenScheduleVisitDateChanged>(_onScheduleVisitDateChanged);
+    on<HomeScreenScheduleVisitTimeChanged>(_onScheduleVisitTimeChanged);
+    on<HomeScreenScheduleVisitTypeChanged>(_onScheduleVisitTypeChanged);
+    on<HomeScreenScheduleVisitNoteChanged>(_onScheduleVisitNoteChanged);
+    on<HomeScreenScheduleVisitPaymentMethodChanged>(
+      _onScheduleVisitPaymentMethodChanged,
+    );
+    on<HomeScreenScheduleVisitReasonChanged>(_onScheduleVisitReasonChanged);
   }
 
-
   final HomeRepository homeRepository;
+  Timer? _scheduleVisitSearchDebounceTimer;
+  static const int _scheduleVisitPatientSearchLimit = 15;
+
+  @override
+  Future<void> close() {
+    _scheduleVisitSearchDebounceTimer?.cancel();
+    return super.close();
+  }
 
   Future<void> _onStarted(
     HomeScreenStarted event,
@@ -120,10 +175,9 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     } catch (e) {
       if (!isClosed) {
         emit(
-          _asReady(state).copyWith(
-            isLoadingOrganization: false,
-            errorMessage: e.toString(),
-          ),
+          _asReady(
+            state,
+          ).copyWith(isLoadingOrganization: false, errorMessage: e.toString()),
         );
       }
     }
@@ -237,12 +291,77 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     Emitter<HomeScreenState> emit,
   ) {
     final HomeScreenReady current = _asReady(state);
+
+    // Default Date and Time
+    final now = DateTime.now();
+    final today = todayDateOnly(() => now);
+    final nextRoundedTime = _roundToNext15Minutes(now);
+
+    // Default Provider (matched from loginResponse via user id)
+    StaffModel? defaultProvider;
+    try {
+      final loginResponseRaw = AppPreferences.instance.getStringSync(
+        AppPreferencesKeys.loginResponse,
+      );
+      if (loginResponseRaw != null) {
+        final loginModel = loginModelFromJson(loginResponseRaw);
+        final userId = loginModel.responseData?.user?.id;
+        if (userId != null) {
+          // Find provider with matching user id.
+          // Note: getUsersByRole('Doctor') might not have been called yet if we are opening from fresh state.
+          // But usually, allProviders is populated in the initial HomeScreenStarted.
+          defaultProvider = current.allProviders.where((p) => p.id == userId).firstOrNull;
+        }
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    // Default Visit Type
+    VisitTypeModel? defaultVisitType = current.allVisitTypes.where((v) => v.isDefault == true).firstOrNull;
+
     emit(
       current.copyWith(
         activeEndDrawer: HomeScreenEndDrawerKind.scheduleVisit,
         signalOpenEndDrawer: true,
+        scheduleVisitPatientSearchQuery: '',
+        scheduleVisitPatientResults: const <PatientListRow>[],
+        scheduleVisitIsPatientSearchLoading: false,
+        scheduleVisitShowPatientDropdown: false,
+        scheduleVisitIsAddingPatient: false,
+        clearScheduleVisitSelectedPatient: true,
+        scheduleVisitFirstName: '',
+        scheduleVisitLastName: '',
+        scheduleVisitOfficeLocation: null,
+        clearScheduleVisitOfficeLocation: true,
+        scheduleVisitProvider: defaultProvider,
+        clearScheduleVisitProvider: defaultProvider == null,
+        scheduleVisitDate: today,
+        scheduleVisitTime: nextRoundedTime,
+        scheduleVisitType: defaultVisitType,
+        clearScheduleVisitType: defaultVisitType == null,
+        scheduleVisitNote: '',
+        scheduleVisitPaymentMethod: null,
+        clearScheduleVisitPaymentMethod: true,
+        scheduleVisitReason: null,
+        clearScheduleVisitReason: true,
       ),
     );
+  }
+
+  DateTime _roundToNext15Minutes(DateTime dt) {
+    final int minutes = dt.minute;
+    if (minutes % 15 == 0) return dt.copyWith(second: 0, millisecond: 0);
+
+    final int next15 = ((minutes / 15).floor() + 1) * 15;
+    if (next15 >= 60) {
+      return dt.add(const Duration(hours: 1)).copyWith(
+        minute: 0,
+        second: 0,
+        millisecond: 0,
+      );
+    }
+    return dt.copyWith(minute: next15, second: 0, millisecond: 0);
   }
 
   void _onEndDrawerOpenConsumed(
@@ -279,6 +398,281 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     }
   }
 
+  void _onScheduleVisitPatientDropdownOpened(
+    HomeScreenScheduleVisitPatientDropdownOpened event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    final HomeScreenReady current = _asReady(state);
+    emit(current.copyWith(scheduleVisitShowPatientDropdown: true));
+  }
+
+  void _onScheduleVisitPatientDropdownClosed(
+    HomeScreenScheduleVisitPatientDropdownClosed event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    final HomeScreenReady current = _asReady(state);
+    emit(current.copyWith(scheduleVisitShowPatientDropdown: false));
+  }
+
+  void _onScheduleVisitPatientSearchChanged(
+    HomeScreenScheduleVisitPatientSearchChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    final HomeScreenReady current = _asReady(state);
+    _scheduleVisitSearchDebounceTimer?.cancel();
+
+    final String query = event.query.trimLeft();
+    emit(
+      current.copyWith(
+        scheduleVisitPatientSearchQuery: query,
+        scheduleVisitShowPatientDropdown: query.trim().isNotEmpty,
+        clearScheduleVisitSelectedPatient: true,
+        scheduleVisitIsPatientSearchLoading: false,
+        scheduleVisitPatientResults: const <PatientListRow>[],
+      ),
+    );
+  }
+
+  Future<void> _onScheduleVisitPatientSearchDebounced(
+    HomeScreenScheduleVisitPatientSearchDebounced event,
+    Emitter<HomeScreenState> emit,
+  ) async {
+    if (!isClosed && state is HomeScreenReady) {
+      emit(
+        _asReady(state).copyWith(
+          scheduleVisitIsPatientSearchLoading: false,
+          scheduleVisitPatientResults: const <PatientListRow>[],
+        ),
+      );
+    }
+  }
+
+  Future<void> _onScheduleVisitPatientSuggestionsRequested(
+    HomeScreenScheduleVisitPatientSuggestionsRequested event,
+    Emitter<HomeScreenState> emit,
+  ) async {
+    final String query = event.query.trim();
+    if (query.isEmpty) {
+      event.completer.complete(const <PatientListRow>[]);
+      return;
+    }
+
+    try {
+      final PatientsListApiEnvelope envelope = await homeRepository
+          .fetchPatients(
+            page: 1,
+            limit: _scheduleVisitPatientSearchLimit,
+            search: query,
+          );
+      if (isClosed) {
+        if (!event.completer.isCompleted) {
+          event.completer.complete(const <PatientListRow>[]);
+        }
+        return;
+      }
+
+      final bool isSuccess =
+          (envelope.responseType ?? '').trim().toLowerCase() == 'success';
+      if (isSuccess) {
+        event.completer.complete(
+          envelope.responseData?.rows ?? const <PatientListRow>[],
+        );
+        return;
+      }
+
+      if (!event.completer.isCompleted) {
+        event.completer.complete(const <PatientListRow>[]);
+      }
+      emit(
+        _asReady(state).copyWith(
+          errorMessage: (envelope.message ?? '').trim().isNotEmpty
+              ? envelope.message!.trim()
+              : AppStrings.scheduleVisitPatientSearchFailure,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!event.completer.isCompleted) {
+        event.completer.complete(const <PatientListRow>[]);
+      }
+      if (isClosed) {
+        return;
+      }
+      emit(
+        _asReady(state).copyWith(
+          errorMessage: e.message.trim().isNotEmpty
+              ? e.message.trim()
+              : AppStrings.scheduleVisitPatientSearchFailure,
+        ),
+      );
+    } catch (_) {
+      if (!event.completer.isCompleted) {
+        event.completer.complete(const <PatientListRow>[]);
+      }
+      if (isClosed) {
+        return;
+      }
+      emit(
+        _asReady(
+          state,
+        ).copyWith(errorMessage: AppStrings.scheduleVisitPatientSearchFailure),
+      );
+    }
+  }
+
+  void _onScheduleVisitAddPatientSelected(
+    HomeScreenScheduleVisitAddPatientSelected event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    final HomeScreenReady current = _asReady(state);
+    _scheduleVisitSearchDebounceTimer?.cancel();
+    emit(
+      current.copyWith(
+        scheduleVisitIsAddingPatient: true,
+        scheduleVisitShowPatientDropdown: false,
+        scheduleVisitPatientSearchQuery: '',
+        scheduleVisitPatientResults: const <PatientListRow>[],
+        scheduleVisitIsPatientSearchLoading: false,
+        clearScheduleVisitSelectedPatient: true,
+      ),
+    );
+  }
+
+  void _onScheduleVisitSearchExistingPatientSelected(
+    HomeScreenScheduleVisitSearchExistingPatientSelected event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    final HomeScreenReady current = _asReady(state);
+    emit(
+      current.copyWith(
+        scheduleVisitIsAddingPatient: false,
+        scheduleVisitShowPatientDropdown: false,
+        scheduleVisitFirstName: '',
+        scheduleVisitLastName: '',
+      ),
+    );
+  }
+
+  void _onScheduleVisitPatientSelected(
+    HomeScreenScheduleVisitPatientSelected event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    final HomeScreenReady current = _asReady(state);
+    _scheduleVisitSearchDebounceTimer?.cancel();
+    emit(
+      current.copyWith(
+        scheduleVisitSelectedPatient: event.patient,
+        scheduleVisitPatientSearchQuery: event.patient.fullName,
+        scheduleVisitShowPatientDropdown: false,
+        scheduleVisitIsPatientSearchLoading: false,
+      ),
+    );
+  }
+
+  void _onScheduleVisitFirstNameChanged(
+    HomeScreenScheduleVisitFirstNameChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(_asReady(state).copyWith(scheduleVisitFirstName: event.value));
+  }
+
+  void _onScheduleVisitLastNameChanged(
+    HomeScreenScheduleVisitLastNameChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(_asReady(state).copyWith(scheduleVisitLastName: event.value));
+  }
+
+  void _onScheduleVisitOfficeLocationChanged(
+    HomeScreenScheduleVisitOfficeLocationChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(
+      _asReady(state).copyWith(
+        scheduleVisitOfficeLocation: event.location,
+        clearScheduleVisitOfficeLocation: event.location == null,
+      ),
+    );
+  }
+
+  void _onScheduleVisitProviderChanged(
+    HomeScreenScheduleVisitProviderChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(
+      _asReady(state).copyWith(
+        scheduleVisitProvider: event.provider,
+        clearScheduleVisitProvider: event.provider == null,
+      ),
+    );
+  }
+
+  void _onScheduleVisitDateChanged(
+    HomeScreenScheduleVisitDateChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(
+      _asReady(state).copyWith(
+        scheduleVisitDate: event.date,
+        clearScheduleVisitDate: event.date == null,
+      ),
+    );
+  }
+
+  void _onScheduleVisitTimeChanged(
+    HomeScreenScheduleVisitTimeChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(
+      _asReady(state).copyWith(
+        scheduleVisitTime: event.time,
+        clearScheduleVisitTime: event.time == null,
+      ),
+    );
+  }
+
+  void _onScheduleVisitTypeChanged(
+    HomeScreenScheduleVisitTypeChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(
+      _asReady(state).copyWith(
+        scheduleVisitType: event.visitType,
+        clearScheduleVisitType: event.visitType == null,
+      ),
+    );
+  }
+
+  void _onScheduleVisitNoteChanged(
+    HomeScreenScheduleVisitNoteChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(_asReady(state).copyWith(scheduleVisitNote: event.note));
+  }
+
+  void _onScheduleVisitPaymentMethodChanged(
+    HomeScreenScheduleVisitPaymentMethodChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(
+      _asReady(state).copyWith(
+        scheduleVisitPaymentMethod: event.method,
+        clearScheduleVisitPaymentMethod: event.method == null,
+      ),
+    );
+  }
+
+  void _onScheduleVisitReasonChanged(
+    HomeScreenScheduleVisitReasonChanged event,
+    Emitter<HomeScreenState> emit,
+  ) {
+    emit(
+      _asReady(state).copyWith(
+        scheduleVisitReason: event.reason,
+        clearScheduleVisitReason: event.reason == null,
+      ),
+    );
+  }
+
   void _onFilterStatusChanged(
     HomeScreenFilterStatusChanged event,
     Emitter<HomeScreenState> emit,
@@ -289,7 +683,10 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
         emit(current.copyWith(draftStatuses: event.statuses));
       } else {
         emit(current.copyWith(selectedStatuses: event.statuses));
-        _syncFiltersToApi(current.copyWith(selectedStatuses: event.statuses));
+        _syncFiltersToApi(
+          current.copyWith(selectedStatuses: event.statuses),
+          emit,
+        );
       }
     }
   }
@@ -304,7 +701,10 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
         emit(current.copyWith(draftProviders: event.providers));
       } else {
         emit(current.copyWith(selectedProviders: event.providers));
-        _syncFiltersToApi(current.copyWith(selectedProviders: event.providers));
+        _syncFiltersToApi(
+          current.copyWith(selectedProviders: event.providers),
+          emit,
+        );
       }
     }
   }
@@ -322,7 +722,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
           selectedMedicalAssistants: event.medicalAssistants,
         );
         emit(next);
-        _syncFiltersToApi(next);
+        _syncFiltersToApi(next, emit);
       }
     }
   }
@@ -339,6 +739,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
         emit(current.copyWith(selectedOfficeLocations: event.locations));
         _syncFiltersToApi(
           current.copyWith(selectedOfficeLocations: event.locations),
+          emit,
         );
       }
     }
@@ -377,7 +778,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
           isCalendarVisible: false,
         );
         emit(next);
-        _syncFiltersToApi(next);
+        _syncFiltersToApi(next, emit);
       }
     }
   }
@@ -413,7 +814,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
         clearActiveEndDrawer: true,
       );
       emit(next);
-      _syncFiltersToApi(next);
+      _syncFiltersToApi(next, emit);
     }
   }
 
@@ -435,7 +836,10 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     );
   }
 
-  Future<void> _syncFiltersToApi(HomeScreenReady readyState) async {
+  Future<void> _syncFiltersToApi(
+    HomeScreenReady readyState,
+    Emitter<HomeScreenState> emit,
+  ) async {
     final filters = SavedVisitFilters(
       status: readyState.selectedStatuses,
       doctorIds: readyState.selectedProviders.map((p) => p.id).toList(),
@@ -453,7 +857,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
       if (!isClosed && shouldToast && message != null && message.isNotEmpty) {
         emit(readyState.copyWith(successMessage: message));
       }
-      
+
       // Refresh visits after syncing filters
       if (!isClosed) {
         add(const HomeScreenCurrentVisitsRequested());
@@ -473,7 +877,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
   ) async {
     if (state is! HomeScreenReady) return;
     final currentState = _asReady(state);
-    
+
     final int targetPage = event.isNextPage ? currentState.pageCurrent + 1 : 1;
     if (event.isNextPage && targetPage > currentState.totalPageCurrent) return;
 
@@ -491,26 +895,30 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
       );
 
       if (!isClosed) {
-        final List<VisitModel> updatedList = event.isNextPage 
+        final List<VisitModel> updatedList = event.isNextPage
             ? [...currentState.currentVisits, ...response.data]
             : response.data;
-            
-        emit(_asReady(state).copyWith(
-          currentVisits: updatedList,
-          pageCurrent: response.page,
-          totalPageCurrent: response.totalPage,
-          filteredCountCurrent: response.filteredCount,
-          isFetchingMoreCurrent: false,
-          isLoadingVisits: false,
-        ));
+
+        emit(
+          _asReady(state).copyWith(
+            currentVisits: updatedList,
+            pageCurrent: response.page,
+            totalPageCurrent: response.totalPage,
+            filteredCountCurrent: response.filteredCount,
+            isFetchingMoreCurrent: false,
+            isLoadingVisits: false,
+          ),
+        );
       }
     } catch (e) {
       if (!isClosed) {
-        emit(_asReady(state).copyWith(
-          errorMessage: e.toString(),
-          isFetchingMoreCurrent: false,
-          isLoadingVisits: false,
-        ));
+        emit(
+          _asReady(state).copyWith(
+            errorMessage: e.toString(),
+            isFetchingMoreCurrent: false,
+            isLoadingVisits: false,
+          ),
+        );
       }
     }
   }
@@ -521,7 +929,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
   ) async {
     if (state is! HomeScreenReady) return;
     final currentState = _asReady(state);
-    
+
     final int targetPage = event.isNextPage ? currentState.pageUpcoming + 1 : 1;
     if (event.isNextPage && targetPage > currentState.totalPageUpcoming) return;
 
@@ -539,26 +947,30 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
       );
 
       if (!isClosed) {
-        final List<VisitModel> updatedList = event.isNextPage 
+        final List<VisitModel> updatedList = event.isNextPage
             ? [...currentState.upcomingVisits, ...response.data]
             : response.data;
-            
-        emit(_asReady(state).copyWith(
-          upcomingVisits: updatedList,
-          pageUpcoming: response.page,
-          totalPageUpcoming: response.totalPage,
-          filteredCountUpcoming: response.filteredCount,
-          isFetchingMoreUpcoming: false,
-          isLoadingVisits: false,
-        ));
+
+        emit(
+          _asReady(state).copyWith(
+            upcomingVisits: updatedList,
+            pageUpcoming: response.page,
+            totalPageUpcoming: response.totalPage,
+            filteredCountUpcoming: response.filteredCount,
+            isFetchingMoreUpcoming: false,
+            isLoadingVisits: false,
+          ),
+        );
       }
     } catch (e) {
       if (!isClosed) {
-        emit(_asReady(state).copyWith(
-          errorMessage: e.toString(),
-          isFetchingMoreUpcoming: false,
-          isLoadingVisits: false,
-        ));
+        emit(
+          _asReady(state).copyWith(
+            errorMessage: e.toString(),
+            isFetchingMoreUpcoming: false,
+            isLoadingVisits: false,
+          ),
+        );
       }
     }
   }
@@ -569,7 +981,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
   ) async {
     if (state is! HomeScreenReady) return;
     final currentState = _asReady(state);
-    
+
     final int targetPage = event.isNextPage ? currentState.pageRecorded + 1 : 1;
     if (event.isNextPage && targetPage > currentState.totalPageRecorded) return;
 
@@ -587,26 +999,30 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
       );
 
       if (!isClosed) {
-        final List<VisitModel> updatedList = event.isNextPage 
+        final List<VisitModel> updatedList = event.isNextPage
             ? [...currentState.recordedVisits, ...response.data]
             : response.data;
-            
-        emit(_asReady(state).copyWith(
-          recordedVisits: updatedList,
-          pageRecorded: response.page,
-          totalPageRecorded: response.totalPage,
-          filteredCountRecorded: response.filteredCount,
-          isFetchingMoreRecorded: false,
-          isLoadingVisits: false,
-        ));
+
+        emit(
+          _asReady(state).copyWith(
+            recordedVisits: updatedList,
+            pageRecorded: response.page,
+            totalPageRecorded: response.totalPage,
+            filteredCountRecorded: response.filteredCount,
+            isFetchingMoreRecorded: false,
+            isLoadingVisits: false,
+          ),
+        );
       }
     } catch (e) {
       if (!isClosed) {
-        emit(_asReady(state).copyWith(
-          errorMessage: e.toString(),
-          isFetchingMoreRecorded: false,
-          isLoadingVisits: false,
-        ));
+        emit(
+          _asReady(state).copyWith(
+            errorMessage: e.toString(),
+            isFetchingMoreRecorded: false,
+            isLoadingVisits: false,
+          ),
+        );
       }
     }
   }

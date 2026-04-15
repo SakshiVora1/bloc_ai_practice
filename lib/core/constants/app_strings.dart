@@ -131,6 +131,20 @@ abstract final class AppStrings {
       'Close schedule visit panel';
   static const String scheduleVisitFieldPlaceholder = 'Enter details';
   static const String scheduleVisitSubmit = 'Submit';
+  static const String scheduleVisitSelectOrCreatePatient =
+      'Select or Create Patient';
+  static const String scheduleVisitNewPatientInformation =
+      'New Patient Information';
+  static const String scheduleVisitSearchExistingPatient =
+      'Search Existing Patient';
+  static const String scheduleVisitAddNewPatient = 'Add New Patient';
+  static const String scheduleVisitAddNewPatientSubtitle =
+      'Create a new patient record';
+  static const String scheduleVisitPatientSearchHint = 'Search patient';
+  static const String scheduleVisitFirstNameLabel = 'First Name';
+  static const String scheduleVisitLastNameLabel = 'Last Name';
+  static const String scheduleVisitPatientSearchFailure =
+      'Unable to load patients. Please try again.';
 
   static const String medicalRecordTitle = 'Medical record';
   static String medicalRecordBody(int patientId) =>
