@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:toastification/toastification.dart';
 import 'package:subqdocs_bloc/core/config/app_config.dart';
 import 'package:subqdocs_bloc/core/theme/app_theme.dart';
@@ -31,6 +32,11 @@ class MyApp extends StatelessWidget {
         navigatorKey: RootNavigatorKey.instance,
         theme: AppTheme.light(),
         debugShowCheckedModeBanner: false,
+        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         initialRoute: RouteNames.splashScreen,
         routes: AppRoutes.routes,
       ),

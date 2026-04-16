@@ -80,6 +80,15 @@ final class HomeScreenReady extends HomeScreenState {
   final String scheduleVisitNote;
   final String? scheduleVisitPaymentMethod;
   final String? scheduleVisitReason;
+  final String? scheduleVisitGender;
+  final DateTime? dateOfBirth;
+  final CountryOption scheduleVisitCountry;
+  final String scheduleVisitStreetAddress;
+  final String scheduleVisitCity;
+  final String scheduleVisitStateProvince;
+  final String scheduleVisitPostalCode;
+  final CountryOption scheduleVisitPhoneCountry;
+  final String scheduleVisitPhoneNumber;
 
   const HomeScreenReady({
     required this.startDate,
@@ -138,6 +147,15 @@ final class HomeScreenReady extends HomeScreenState {
     this.scheduleVisitNote = '',
     this.scheduleVisitPaymentMethod,
     this.scheduleVisitReason,
+    this.scheduleVisitGender = 'Undeclared',
+    this.dateOfBirth,
+    this.scheduleVisitCountry = CountryOption.unitedStates,
+    this.scheduleVisitStreetAddress = '',
+    this.scheduleVisitCity = '',
+    this.scheduleVisitStateProvince = '',
+    this.scheduleVisitPostalCode = '',
+    this.scheduleVisitPhoneCountry = CountryOption.unitedStates,
+    this.scheduleVisitPhoneNumber = '',
   });
 
   HomeScreenReady copyWith({
@@ -210,6 +228,16 @@ final class HomeScreenReady extends HomeScreenState {
     bool clearScheduleVisitPaymentMethod = false,
     String? scheduleVisitReason,
     bool clearScheduleVisitReason = false,
+    String? scheduleVisitGender = 'Undeclared',
+    DateTime? dateOfBirth,
+    bool clearDateOfBirth = false,
+    CountryOption? scheduleVisitCountry,
+    String? scheduleVisitStreetAddress,
+    String? scheduleVisitCity,
+    String? scheduleVisitStateProvince,
+    String? scheduleVisitPostalCode,
+    CountryOption? scheduleVisitPhoneCountry,
+    String? scheduleVisitPhoneNumber,
   }) {
     return HomeScreenReady(
       startDate: startDate ?? this.startDate,
@@ -311,6 +339,20 @@ final class HomeScreenReady extends HomeScreenState {
       scheduleVisitReason: clearScheduleVisitReason
           ? null
           : (scheduleVisitReason ?? this.scheduleVisitReason),
+      scheduleVisitGender: scheduleVisitGender ?? this.scheduleVisitGender,
+      dateOfBirth: clearDateOfBirth ? null : (dateOfBirth ?? this.dateOfBirth),
+      scheduleVisitCountry: scheduleVisitCountry ?? this.scheduleVisitCountry,
+      scheduleVisitStreetAddress:
+          scheduleVisitStreetAddress ?? this.scheduleVisitStreetAddress,
+      scheduleVisitCity: scheduleVisitCity ?? this.scheduleVisitCity,
+      scheduleVisitStateProvince:
+          scheduleVisitStateProvince ?? this.scheduleVisitStateProvince,
+      scheduleVisitPostalCode:
+          scheduleVisitPostalCode ?? this.scheduleVisitPostalCode,
+      scheduleVisitPhoneCountry:
+          scheduleVisitPhoneCountry ?? this.scheduleVisitPhoneCountry,
+      scheduleVisitPhoneNumber:
+          scheduleVisitPhoneNumber ?? this.scheduleVisitPhoneNumber,
     );
   }
 }

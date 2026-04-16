@@ -201,3 +201,58 @@ final class HomeScreenScheduleVisitReasonChanged extends HomeScreenEvent {
   const HomeScreenScheduleVisitReasonChanged(this.reason);
   final String? reason;
 }
+
+final class HomeScreenScheduleVisitGender extends HomeScreenEvent {
+  const HomeScreenScheduleVisitGender(this.gender);
+  final String? gender;
+}
+
+final class HomeScreenScheduleVisitDateOfBirthChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitDateOfBirthChanged(this.date);
+  final DateTime? date;
+}
+
+final class HomeScreenScheduleVisitCountryChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitCountryChanged(this.country);
+
+  final CountryOption country;
+}
+
+final class HomeScreenScheduleVisitStreetAddressChanged
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitStreetAddressChanged(this.value);
+
+  final String value;
+}
+
+final class HomeScreenScheduleVisitStreetAddressSuggestionsRequested
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitStreetAddressSuggestionsRequested({
+    required this.query,
+    required this.country,
+    required this.completer,
+  });
+
+  final String query;
+  final CountryOption country;
+  final Completer<List<ScheduleVisitAddressSuggestion>> completer;
+}
+
+final class HomeScreenScheduleVisitStreetAddressSelected
+    extends HomeScreenEvent {
+  const HomeScreenScheduleVisitStreetAddressSelected(this.suggestion);
+
+  final ScheduleVisitAddressSuggestion suggestion;
+}
+
+final class HomeScreenScheduleVisitPhoneCountryChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPhoneCountryChanged(this.country);
+
+  final CountryOption country;
+}
+
+final class HomeScreenScheduleVisitPhoneNumberChanged extends HomeScreenEvent {
+  const HomeScreenScheduleVisitPhoneNumberChanged(this.value);
+
+  final String value;
+}

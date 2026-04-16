@@ -94,6 +94,7 @@ abstract final class AppStrings {
   static const String calendarModeSingle = 'Single day';
   static const String calendarPickerTitle = 'Select dates';
   static const String cancelButton = 'Cancel';
+  static const String doneButton = 'Done';
 
   static const String dateRangePlaceholder = 'Select date range';
   static const String dateShortcutPast7Days = 'Past 7 days';
@@ -143,8 +144,51 @@ abstract final class AppStrings {
   static const String scheduleVisitPatientSearchHint = 'Search patient';
   static const String scheduleVisitFirstNameLabel = 'First Name';
   static const String scheduleVisitLastNameLabel = 'Last Name';
+  static const String scheduleVisitDateOfBirthLabel = 'Date of Birth';
+  static const String scheduleVisitGenderAtBirthLabel = 'Gender at Birth';
+  static const String scheduleVisitPatientInfoSection = 'Patient Info';
+  static const String scheduleVisitVisitInfoSection = 'Visit Info';
+  static const String scheduleVisitFinancialResponsibilitySection =
+      'Financial Responsibility';
+  static const String scheduleVisitAppointmentNoteLabel = 'Appointment Note';
+  static const String scheduleVisitAppointmentNoteHint =
+      'Enter appointment note (optional)';
+  static const String scheduleVisitPaymentMethodLabel = 'Payment Method';
+  static const String scheduleVisitPaymentMethodHint = 'Select payment method';
+  static const String scheduleVisitReasonLabel = 'Reportable Reason for Visit';
+  static const String scheduleVisitReasonHint = 'Select reason';
+  static const String scheduleVisitProviderPrefix = 'Dr.';
+  static const String scheduleVisitGenderUndeclared = 'Undeclared';
+  static const String scheduleVisitGenderMale = 'Male';
+  static const String scheduleVisitGenderFemale = 'Female';
+  static const String scheduleVisitPaymentMethodSelfPay = 'None/Self-Pay';
+  static const String scheduleVisitPaymentMethodMedicalInsurance =
+      'Medical Insurance';
+  static const String scheduleVisitOptionOther = 'Other';
+  static const String scheduleVisitReasonMedicalNonEmergency =
+      'Medical Non-Emergency';
+  static const String scheduleVisitReasonCosmetic = 'Cosmetic';
+  static const String scheduleVisitPhoneNumberLabel = 'Phone Number';
+  static const String scheduleVisitPhoneNumberHint = 'Enter phone number';
+  static const String scheduleVisitCountrySearchHint = 'Search country...';
+  static const String scheduleVisitCountryLabel = 'Country';
+  static const String scheduleVisitStreetAddressLabel = 'Street Address';
+  static const String scheduleVisitCityLabel = 'City';
+  static const String scheduleVisitStateLabel = 'State';
+  static const String scheduleVisitPostalCodeLabel = 'Postal Code';
+  static const String scheduleVisitEmailHint = 'Enter Email';
+  static const String scheduleVisitCountryHint = 'Select country';
+  static const String scheduleVisitStateAddressHint =
+      'Start typing street number, name, or search';
+  static const String scheduleVisitDateHint = 'MM/DD/YYYY';
+  static const String scheduleVisitTimeHint = 'Select time';
   static const String scheduleVisitPatientSearchFailure =
       'Unable to load patients. Please try again.';
+  static const String scheduleVisitStreetAddressSearchFailure =
+      'Unable to load street addresses. Please try again.';
+  static const String selectLabel = 'Select';
+  static const String meridiemAm = 'AM';
+  static const String meridiemPm = 'PM';
 
   static const String medicalRecordTitle = 'Medical record';
   static String medicalRecordBody(int patientId) =>
@@ -267,6 +311,17 @@ abstract final class AppStrings {
   static const String settingsEditNotImplemented =
       'Editing is not available in this build.';
 
-  static const String unauthorizedUser =
-      'Your session has expired. Please log in again.';
+  static const String unauthorizedUser = 'Unauthorized user';
+  static const String internetConnectionError =
+      'Please check your internet connection.';
+  static const String requestTimeoutError =
+      'The request is taking too long. Please try again.';
+  static const String serverUnavailableError =
+      'Server is unavailable. Please try again.';
+  static const String secureConnectionError =
+      'Could not verify the server connection. Please try again.';
+  static const String invalidServerResponseError =
+      'We received an invalid response from the server.';
+  static const String genericApiError =
+      'Something went wrong. Please try again.';
 }

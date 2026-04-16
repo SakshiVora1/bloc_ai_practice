@@ -1,28 +1,39 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'dart:convert';
+import 'package:google_maps_apis/places.dart';
 import 'package:subqdocs_bloc/core/constants/app_preferences_keys.dart';
+import 'package:subqdocs_bloc/core/models/country_option.dart';
+import 'package:subqdocs_bloc/core/config/url_service.dart';
 import 'package:subqdocs_bloc/core/services/api_exceptions.dart';
 import 'package:subqdocs_bloc/core/services/api_service.dart';
 import 'package:subqdocs_bloc/core/services/app_preferences.dart';
 import 'package:subqdocs_bloc/core/utils/date_formatters.dart';
 import 'package:subqdocs_bloc/data/models/organization_model.dart';
-import 'package:subqdocs_bloc/data/models/staff_model.dart';
 import 'package:subqdocs_bloc/data/models/office_location_model.dart';
+import 'package:subqdocs_bloc/data/models/staff_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_type_model.dart';
 import 'package:subqdocs_bloc/data/models/visit_model.dart';
+import 'package:subqdocs_bloc/features/home/domain/models/schedule_visit_address_suggestion.dart';
 import 'package:subqdocs_bloc/features/home/domain/models/saved_visit_filters.dart';
 import 'package:subqdocs_bloc/features/home/domain/repositories/home_repository.dart';
 import 'package:subqdocs_bloc/features/patients/data/patients_list_api_envelope.dart';
 
 final class HomeRepositoryImpl implements HomeRepository {
-  HomeRepositoryImpl({ApiService? apiService, AppPreferences? preferences})
-    : _apiService = apiService ?? ApiService(),
-      _preferences = preferences ?? AppPreferences.instance;
+  HomeRepositoryImpl({
+    ApiService? apiService,
+    AppPreferences? preferences,
+    GoogleMapsPlaces? googleMapsPlaces,
+  }) : _apiService = apiService ?? ApiService(),
+       _preferences = preferences ?? AppPreferences.instance,
+       _googleMapsPlaces =
+           googleMapsPlaces ??
+           GoogleMapsPlaces(apiKey: UrlService.googleMapApiKey);
 
   final ApiService _apiService;
   final AppPreferences _preferences;
+  final GoogleMapsPlaces _googleMapsPlaces;
 
   static const String organizationPath = 'organization';
 
@@ -52,8 +63,8 @@ final class HomeRepositoryImpl implements HomeRepository {
       return OrganizationModel.fromJson(
         Map<String, dynamic>.from(responseData),
       );
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -86,8 +97,8 @@ final class HomeRepositoryImpl implements HomeRepository {
       return responseData
           .map((e) => StaffModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -123,8 +134,8 @@ final class HomeRepositoryImpl implements HomeRepository {
             ),
           )
           .toList();
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -168,8 +179,8 @@ final class HomeRepositoryImpl implements HomeRepository {
             (e) => VisitTypeModel.fromJson(Map<String, dynamic>.from(e as Map)),
           )
           .toList();
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -202,8 +213,8 @@ final class HomeRepositoryImpl implements HomeRepository {
       return SavedVisitFilters.fromJson(
         Map<String, dynamic>.from(responseData),
       );
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -265,9 +276,125 @@ final class HomeRepositoryImpl implements HomeRepository {
     }
     try {
       return PatientsListApiEnvelope.fromJson(Map<String, dynamic>.from(data));
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
+  }
+
+  @override
+  Future<List<ScheduleVisitAddressSuggestion>> fetchStreetAddressSuggestions({
+    required String search,
+    required CountryOption country,
+  }) async {
+    final String trimmedSearch = search.trim();
+    if (trimmedSearch.isEmpty) {
+      return const <ScheduleVisitAddressSuggestion>[];
+    }
+
+    if (UrlService.googleMapApiKey.trim().isEmpty) {
+      throw const ParseApiException(
+        message: 'Google Maps API key is not configured',
+      );
+    }
+
+    final PlacesAutocompleteResponse response = await _googleMapsPlaces
+        .autocomplete(
+          trimmedSearch,
+          components: <Component>[
+            Component(Component.country, country.isoCode.toLowerCase()),
+          ],
+          types: const <String>['address'],
+        );
+
+    if (response.isOk) {
+      final List<Prediction> predictions =
+          response.predictions ?? const <Prediction>[];
+      return predictions
+          .where(
+            (Prediction prediction) =>
+                (prediction.placeId ?? '').trim().isNotEmpty &&
+                (prediction.description ?? '').trim().isNotEmpty,
+          )
+          .map(
+            (Prediction prediction) => ScheduleVisitAddressSuggestion(
+              placeId: prediction.placeId!.trim(),
+              description: prediction.description!.trim(),
+              primaryText: prediction.structuredFormatting?.mainText?.trim(),
+              secondaryText: prediction.structuredFormatting?.secondaryText
+                  ?.trim(),
+            ),
+          )
+          .toList();
+    }
+
+    if (response.hasNoResults) {
+      return const <ScheduleVisitAddressSuggestion>[];
+    }
+
+    throw ParseApiException(
+      message: response.errorMessage?.trim().isNotEmpty == true
+          ? response.errorMessage!.trim()
+          : 'Unable to load street addresses',
+    );
+  }
+
+  @override
+  Future<ScheduleVisitAddressDetails> fetchStreetAddressDetails({
+    required String placeId,
+  }) async {
+    if (UrlService.googleMapApiKey.trim().isEmpty) {
+      throw const ParseApiException(
+        message: 'Google Maps API key is not configured',
+      );
+    }
+
+    final PlacesDetailsResponse response = await _googleMapsPlaces
+        .getDetailsByPlaceId(
+          placeId,
+          fields: const <String>['address_component', 'formatted_address'],
+        );
+
+    if (!response.isOk || response.result == null) {
+      throw ParseApiException(
+        message: response.errorMessage?.trim().isNotEmpty == true
+            ? response.errorMessage!.trim()
+            : 'Unable to load street address details',
+      );
+    }
+
+    final PlaceDetails details = response.result!;
+    final List<AddressComponent> components =
+        details.addressComponents ?? const <AddressComponent>[];
+
+    String componentLongName(String type) {
+      for (final AddressComponent component in components) {
+        if (component.types?.contains(type) ?? false) {
+          return component.longName?.trim() ?? '';
+        }
+      }
+      return '';
+    }
+
+    String buildStreetAddress() {
+      final String streetNumber = componentLongName('street_number');
+      final String route = componentLongName('route');
+      final String joined = '$streetNumber $route'.trim();
+      if (joined.isNotEmpty) {
+        return joined;
+      }
+      return details.formattedAddress?.trim() ?? '';
+    }
+
+    final String city = componentLongName('locality').isNotEmpty
+        ? componentLongName('locality')
+        : componentLongName('postal_town');
+
+    return ScheduleVisitAddressDetails(
+      streetAddress: buildStreetAddress(),
+      city: city,
+      state: componentLongName('administrative_area_level_1'),
+      postalCode: componentLongName('postal_code'),
+    );
   }
 
   static const String currentVisitsPath = 'patient/visits/current';
@@ -355,8 +482,8 @@ final class HomeRepositoryImpl implements HomeRepository {
 
     try {
       return VisitListResponse.fromJson(Map<String, dynamic>.from(data));
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 

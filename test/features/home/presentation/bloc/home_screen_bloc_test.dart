@@ -1,6 +1,8 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:subqdocs_bloc/core/models/country_option.dart';
 import 'package:subqdocs_bloc/features/home/domain/home_date_display.dart';
+import 'package:subqdocs_bloc/features/home/domain/models/schedule_visit_address_suggestion.dart';
 import 'package:subqdocs_bloc/features/home/presentation/bloc/home_screen_bloc.dart';
 
 import 'package:subqdocs_bloc/features/home/domain/repositories/home_repository.dart';
@@ -65,6 +67,26 @@ class _MockHomeRepository implements HomeRepository {
         page: 1,
         limit: 15,
       ),
+    );
+  }
+
+  @override
+  Future<List<ScheduleVisitAddressSuggestion>> fetchStreetAddressSuggestions({
+    required String search,
+    required CountryOption country,
+  }) async {
+    return const <ScheduleVisitAddressSuggestion>[];
+  }
+
+  @override
+  Future<ScheduleVisitAddressDetails> fetchStreetAddressDetails({
+    required String placeId,
+  }) async {
+    return const ScheduleVisitAddressDetails(
+      streetAddress: '',
+      city: '',
+      state: '',
+      postalCode: '',
     );
   }
 

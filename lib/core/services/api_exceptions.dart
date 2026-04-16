@@ -1,5 +1,41 @@
 import 'package:dio/dio.dart';
 
+String readableExceptionMessage(
+  Object error, {
+  String fallbackMessage = 'Something went wrong. Please try again.',
+}) {
+  if (error is ApiException) {
+    final String message = error.message.trim();
+    return message.isNotEmpty ? message : fallbackMessage;
+  }
+
+  if (error is FormatException) {
+    final String message = error.message.trim();
+    return message.isNotEmpty ? message : fallbackMessage;
+  }
+
+  final String message = error.toString().trim();
+  if (message.isEmpty) {
+    return fallbackMessage;
+  }
+
+  if (message.startsWith('Exception:')) {
+    final String normalized = message.substring('Exception:'.length).trim();
+    return normalized.isNotEmpty ? normalized : fallbackMessage;
+  }
+
+  return message;
+}
+
+ParseApiException parseApiExceptionFrom(
+  Object error, {
+  String fallbackMessage = 'Something went wrong. Please try again.',
+}) {
+  return ParseApiException(
+    message: readableExceptionMessage(error, fallbackMessage: fallbackMessage),
+  );
+}
+
 /// Base type for all API failures thrown by [ApiService].
 abstract class ApiException implements Exception {
   final String message;

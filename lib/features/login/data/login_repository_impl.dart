@@ -27,8 +27,8 @@ final class LoginRepositoryImpl implements LoginRepository {
     }
     try {
       return LoginModel.fromJson(Map<String, dynamic>.from(data));
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 }

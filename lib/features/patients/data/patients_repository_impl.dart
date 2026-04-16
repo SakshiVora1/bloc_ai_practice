@@ -53,14 +53,12 @@ final class PatientsRepositoryImpl implements PatientsRepository {
     }
     try {
       return PatientsListApiEnvelope.fromJson(Map<String, dynamic>.from(data));
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
   Future<String?> _sessionBearerToken() async {
-    return _preferences.getString(
-      AppPreferencesKeys.bearerToken,
-    );
+    return _preferences.getString(AppPreferencesKeys.bearerToken);
   }
 }

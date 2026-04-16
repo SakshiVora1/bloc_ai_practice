@@ -19,7 +19,7 @@ class HomeEndDrawer extends StatelessWidget {
       },
       builder: (BuildContext context, HomeScreenEndDrawerKind? activeEndDrawer) {
         final double widthFactor =
-            activeEndDrawer == HomeScreenEndDrawerKind.scheduleVisit ? 0.65 : 0.45;
+            activeEndDrawer == HomeScreenEndDrawerKind.scheduleVisit ? 0.65 : 0.55;
 
         return Drawer(
           width: MediaQuery.sizeOf(context).width * widthFactor,

@@ -145,48 +145,48 @@ class HomeVisitRow extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                SizedBox(
-                  width: MediaQuery.orientationOf(context) == Orientation.portrait
-                      ? 155
-                      : 180,
-                  height: 30,
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: StatusMapping.getColor(status)
-                          .withAlpha((0.2 * 255).toInt()),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      status,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppFonts.medium(
-                        12,
-                        StatusMapping.getColor(status),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  Flexible(
+                    child: Container(
+                      height: 30,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: StatusMapping.getColor(status)
+                            .withAlpha((0.2 * 255).toInt()),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        status,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppFonts.medium(
+                          12,
+                          StatusMapping.getColor(status),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 30,
-                    minHeight: 30,
+                  IconButton(
+                    onPressed: () {},
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 30,
+                      minHeight: 30,
+                    ),
+                    splashRadius: 16,
+                    icon: const Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: AppColors.secondaryText,
+                    ),
                   ),
-                  splashRadius: 16,
-                  icon: const Icon(
-                    Icons.more_vert,
-                    size: 18,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

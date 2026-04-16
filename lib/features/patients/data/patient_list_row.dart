@@ -11,6 +11,7 @@ final class PatientListRow {
     required this.genderRaw,
     required this.lastVisitDate,
     required this.previousVisitCount,
+    this.officeLocationId,
   });
 
   /// Placeholder row for [Skeletonizer] loading layout.
@@ -35,6 +36,7 @@ final class PatientListRow {
   final String? genderRaw;
   final String? lastVisitDate;
   final int previousVisitCount;
+  final int? officeLocationId;
 
   factory PatientListRow.fromApiJson(Map<String, dynamic> json) {
     final String first = (json['first_name'] as String?)?.trim() ?? '';
@@ -68,6 +70,13 @@ final class PatientListRow {
         ? idRaw.toInt()
         : int.tryParse(idRaw?.toString() ?? '') ?? 0;
 
+    final dynamic offIdRaw = json['office_location_id'];
+    final int? officeLocationId = offIdRaw is int
+        ? offIdRaw
+        : offIdRaw is num
+        ? offIdRaw.toInt()
+        : int.tryParse(offIdRaw?.toString() ?? '');
+
     return PatientListRow(
       id: id,
       fullName: displayName,
@@ -82,6 +91,7 @@ final class PatientListRow {
           ? null
           : (json['lastVisitDate'] as String?)?.trim(),
       previousVisitCount: previousVisitCount,
+      officeLocationId: officeLocationId,
     );
   }
 

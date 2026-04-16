@@ -98,7 +98,7 @@ class CommonTextFormField extends StatelessWidget {
           : TextCapitalization.sentences,
       decoration: InputDecoration(
         filled: true,
-        fillColor: fillColor,
+        fillColor: fillColor ?? AppColors.white,
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
         hintText: hintText,

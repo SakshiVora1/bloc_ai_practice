@@ -35,8 +35,8 @@ final class SettingsRepositoryImpl implements SettingsRepository {
     }
     try {
       return CurrentUserResponse.fromJson(Map<String, dynamic>.from(data));
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -78,8 +78,8 @@ final class SettingsRepositoryImpl implements SettingsRepository {
     }
     try {
       return CurrentUserResponse.fromJson(Map<String, dynamic>.from(data));
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -101,8 +101,8 @@ final class SettingsRepositoryImpl implements SettingsRepository {
     }
     try {
       return CurrentUserResponse.fromJson(Map<String, dynamic>.from(data));
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -126,8 +126,8 @@ final class SettingsRepositoryImpl implements SettingsRepository {
       return SettingsOfficeLocationResponse.fromJson(
         Map<String, dynamic>.from(data),
       );
-    } on FormatException catch (e) {
-      throw ParseApiException(message: e.message);
+    } catch (e) {
+      throw parseApiExceptionFrom(e);
     }
   }
 
@@ -172,8 +172,6 @@ final class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   Future<String?> _sessionBearerToken() async {
-    return _preferences.getString(
-      AppPreferencesKeys.bearerToken,
-    );
+    return _preferences.getString(AppPreferencesKeys.bearerToken);
   }
 }

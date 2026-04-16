@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:subqdocs_bloc/core/constants/app_strings.dart';
 import 'package:subqdocs_bloc/core/config/app_config.dart';
 
 import 'device_info_service.dart';
@@ -45,10 +47,25 @@ class ApiService {
         await UnauthorizedSessionHandler.handleHttpUnauthorized();
       }
       throw apiException;
+    } on SocketException catch (_) {
+      throw const NetworkApiException(
+        message: AppStrings.internetConnectionError,
+      );
     } on FormatException catch (e) {
-      throw ParseApiException(message: e.message, data: e.source);
+      throw ParseApiException(
+        message: readableExceptionMessage(
+          e,
+          fallbackMessage: AppStrings.invalidServerResponseError,
+        ),
+        data: e.source,
+      );
     } catch (e) {
-      throw UnknownApiException(message: e.toString());
+      throw UnknownApiException(
+        message: readableExceptionMessage(
+          e,
+          fallbackMessage: AppStrings.genericApiError,
+        ),
+      );
     }
   }
 
@@ -213,7 +230,7 @@ class ApiService {
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.receiveTimeout) {
       return TimeoutApiException(
-        message: err.message ?? 'Request timeout',
+        message: AppStrings.requestTimeoutError,
         statusCode: err.response?.statusCode,
         data: err.response?.data,
         dioType: err.type,
@@ -231,16 +248,17 @@ class ApiService {
 
     if (err.type == DioExceptionType.badCertificate) {
       return CertificateApiException(
-        message: err.message ?? 'Bad SSL certificate',
+        message: AppStrings.secureConnectionError,
         statusCode: err.response?.statusCode,
         data: err.response?.data,
         dioType: err.type,
       );
     }
 
-    if (err.type == DioExceptionType.connectionError) {
+    if (err.type == DioExceptionType.connectionError ||
+        err.error is SocketException) {
       return NetworkApiException(
-        message: err.message ?? 'Connection error',
+        message: AppStrings.internetConnectionError,
         statusCode: err.response?.statusCode,
         data: err.response?.data,
         dioType: err.type,
@@ -249,8 +267,11 @@ class ApiService {
 
     final int? statusCode = err.response?.statusCode;
     final dynamic responseData = err.response?.data;
-    final String message =
-        _extractMessage(responseData) ?? err.message ?? 'Something went wrong';
+    final String message = _resolveErrorMessage(
+      statusCode: statusCode,
+      responseData: responseData,
+      dioMessage: err.message,
+    );
 
     // HTTP status mapping.
     switch (statusCode) {
@@ -263,7 +284,7 @@ class ApiService {
         );
       case 401:
         return UnauthorizedApiException(
-          message: message,
+          message: AppStrings.unauthorizedUser,
           statusCode: statusCode,
           data: responseData,
           dioType: err.type,
@@ -300,7 +321,9 @@ class ApiService {
         // 500-599 server errors.
         if (statusCode != null && statusCode >= 500 && statusCode <= 599) {
           return ServerErrorApiException(
-            message: message,
+            message: _isFriendlyMessage(message)
+                ? message
+                : AppStrings.serverUnavailableError,
             statusCode: statusCode,
             data: responseData,
             dioType: err.type,
@@ -331,17 +354,61 @@ class ApiService {
 
     if (data is Map) {
       final dynamic message =
-          data['message'] ?? data['error'] ?? data['detail'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message.trim();
+          data['message'] ??
+          data['error'] ??
+          data['detail'] ??
+          data['response_message'];
+      if (message is String) {
+        return _sanitizeMessage(message);
       }
     }
 
     if (data is String) {
-      final String trimmed = data.trim();
-      return trimmed.isNotEmpty ? trimmed : null;
+      return _sanitizeMessage(data);
     }
 
     return null;
+  }
+
+  String _resolveErrorMessage({
+    required int? statusCode,
+    required dynamic responseData,
+    required String? dioMessage,
+  }) {
+    final String? extractedMessage = _extractMessage(responseData);
+    final String? sanitizedDioMessage = _sanitizeMessage(dioMessage);
+
+    if (statusCode == 401) {
+      return AppStrings.unauthorizedUser;
+    }
+
+    if (statusCode != null && statusCode >= 500 && statusCode <= 599) {
+      return extractedMessage ?? AppStrings.serverUnavailableError;
+    }
+
+    return extractedMessage ??
+        sanitizedDioMessage ??
+        AppStrings.genericApiError;
+  }
+
+  String? _sanitizeMessage(String? message) {
+    final String trimmed = message?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final String lowerCased = trimmed.toLowerCase();
+    if (lowerCased.contains('status code of') ||
+        lowerCased.contains('dioexception') ||
+        lowerCased.contains('apiexception(') ||
+        lowerCased.startsWith('exception:')) {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  bool _isFriendlyMessage(String? message) {
+    return _sanitizeMessage(message) != null;
   }
 }
