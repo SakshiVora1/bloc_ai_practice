@@ -487,6 +487,30 @@ final class HomeRepositoryImpl implements HomeRepository {
     }
   }
 
+  @override
+  Future<Map<String, dynamic>> createVisit({required Map<String, dynamic> body}) async {
+    final String? bearer = await _sessionBearerToken();
+    log('API REQUEST [POST] patient-visit/create: ${jsonEncode(body)}');
+    final dynamic data = await _apiService.post('patient-visit/create', body: body, bearerToken: bearer);
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updatePatient({required int patientId, required Map<String, dynamic> body}) async {
+    final String? bearer = await _sessionBearerToken();
+    log('API REQUEST [PUT] patient/update/$patientId: ${jsonEncode(body)}');
+    final dynamic data = await _apiService.put('patient/update/$patientId', body: body, bearerToken: bearer);
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> createMobilePatient({required Map<String, dynamic> body}) async {
+    final String? bearer = await _sessionBearerToken();
+    log('API REQUEST [POST] patient/mobile/create: ${jsonEncode(body)}');
+    final dynamic data = await _apiService.post('patient/mobile/create', body: body, bearerToken: bearer);
+    return Map<String, dynamic>.from(data as Map);
+  }
+
   Future<String?> _sessionBearerToken() async {
     return _preferences.getString(AppPreferencesKeys.bearerToken);
   }

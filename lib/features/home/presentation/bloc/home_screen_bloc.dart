@@ -20,6 +20,8 @@ import 'package:subqdocs_bloc/features/patients/data/patients_list_api_envelope.
 
 import '../../../../core/constants/app_preferences_keys.dart';
 
+import '../../../../core/utils/date_formatters.dart';
+
 part 'home_screen_event.dart';
 
 part 'home_screen_state.dart';
@@ -72,6 +74,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
     on<HomeScreenScheduleVisitStreetAddressSelected>(_onScheduleVisitStreetAddressSelected);
     on<HomeScreenScheduleVisitPhoneCountryChanged>(_onScheduleVisitPhoneCountryChanged);
     on<HomeScreenScheduleVisitPhoneNumberChanged>(_onScheduleVisitPhoneNumberChanged);
+    on<HomeScreenScheduleVisitSubmitted>(_onScheduleVisitSubmitted);
   }
 
   final HomeRepository homeRepository;
@@ -219,9 +222,7 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
         }
 
         // Fallback: If no officeLocationIds found or didn't match, pick the primary office
-        if (defaultLocation == null) {
-          defaultLocation = current.allOfficeLocations.where((l) => l.primaryOffice == true).firstOrNull;
-        }
+        defaultLocation ??= current.allOfficeLocations.where((l) => l.primaryOffice == true).firstOrNull;
       }
     } catch (_) {
       // Fallback
@@ -529,6 +530,95 @@ class HomeScreenBloc extends Bloc<HomeScreenEvent, HomeScreenState> {
 
   void _onScheduleVisitPhoneNumberChanged(HomeScreenScheduleVisitPhoneNumberChanged event, Emitter<HomeScreenState> emit) {
     emit(_asReady(state).copyWith(scheduleVisitPhoneNumber: event.value));
+  }
+
+  Future<void> _onScheduleVisitSubmitted(HomeScreenScheduleVisitSubmitted event, Emitter<HomeScreenState> emit) async {
+    final HomeScreenReady current = _asReady(state);
+    emit(current.copyWith(isSubmittingScheduleVisit: true));
+
+    try {
+      int? patientId;
+      if (current.scheduleVisitIsAddingPatient) {
+        // Create new patient
+        final Map<String, dynamic> patientData = {
+          'first_name': current.scheduleVisitFirstName,
+          'last_name': current.scheduleVisitLastName,
+          'gender': current.scheduleVisitGender,
+          'dob': current.dateOfBirth?.toIsoDateString(),
+          'contact_no': current.scheduleVisitPhoneNumber,
+          'street_address': current.scheduleVisitStreetAddress,
+          'city': current.scheduleVisitCity,
+          'state': current.scheduleVisitStateProvince,
+          'zipcode': current.scheduleVisitPostalCode,
+          'country': current.scheduleVisitCountry.name,
+        };
+        final response = await homeRepository.createMobilePatient(body: patientData);
+        if (response['response_type']?.toString().toLowerCase() == 'success') {
+          patientId = response['response_data']?['id'];
+        } else {
+          throw ParseApiException(message: response['message'] ?? 'Failed to create patient');
+        }
+      } else {
+        // Update existing patient
+        patientId = current.scheduleVisitSelectedPatient?.id;
+        if (patientId == null) throw const ParseApiException(message: 'Patient not selected');
+ 
+        final Map<String, dynamic> updateData = {
+          'first_name': current.scheduleVisitFirstName.isNotEmpty ? current.scheduleVisitFirstName : current.scheduleVisitSelectedPatient!.firstName,
+          'last_name': current.scheduleVisitLastName.isNotEmpty ? current.scheduleVisitLastName : current.scheduleVisitSelectedPatient!.lastName,
+          'id': patientId,
+          'street_address': current.scheduleVisitStreetAddress,
+          'city': current.scheduleVisitCity,
+          'state': current.scheduleVisitStateProvince,
+          'zipcode': current.scheduleVisitPostalCode,
+        };
+        await homeRepository.updatePatient(patientId: patientId, body: updateData);
+      }
+ 
+      if (patientId == null) throw const ParseApiException(message: 'Failed to resolve patient ID');
+
+      // Schedule Visit
+      final String formattedTime = formatVisitTimeWithOffset(
+        current.scheduleVisitTime ?? DateTime.now(),
+        use24Hour: true,
+      );
+
+      final Map<String, dynamic> visitData = {
+        'doctor_id': current.scheduleVisitProvider?.id,
+        'office_location_id': current.scheduleVisitOfficeLocation?.id,
+        'patient_id': patientId,
+        'payment_method': current.scheduleVisitPaymentMethod ?? 'None/Self-Pay',
+        'reportable_reason_for_visit': current.scheduleVisitReason ?? 'Other',
+        'visit_date': current.scheduleVisitDate?.toIsoDateString(),
+        'visit_time': formattedTime,
+        'visit_type_id': current.scheduleVisitType?.id,
+        'note': current.scheduleVisitNote,
+      };
+
+      final visitResponse = await homeRepository.createVisit(body: visitData);
+      if (visitResponse['response_type']?.toString().toLowerCase() == 'success') {
+        if (!isClosed) {
+          emit(current.copyWith(
+            isSubmittingScheduleVisit: false,
+            scheduleVisitSuccessSignal: true,
+            successMessage: visitResponse['message'] ?? 'Visit scheduled successfully',
+            clearActiveEndDrawer: true,
+          ));
+          add(const HomeScreenCurrentVisitsRequested());
+          add(const HomeScreenUpcomingVisitsRequested());
+        }
+      } else {
+        throw ParseApiException(message: visitResponse['message'] ?? 'Failed to schedule visit');
+      }
+    } on ApiException catch (e) {
+      if (!isClosed) {
+        emit(current.copyWith(isSubmittingScheduleVisit: false, errorMessage: e.message));
+      }
+    } catch (e) {
+      if (!isClosed) {
+        emit(current.copyWith(isSubmittingScheduleVisit: false, errorMessage: e.toString()));
+      }
+    }
   }
 
   void _onScheduleVisitOfficeLocationChanged(HomeScreenScheduleVisitOfficeLocationChanged event, Emitter<HomeScreenState> emit) {

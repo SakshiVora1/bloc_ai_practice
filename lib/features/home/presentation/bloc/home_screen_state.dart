@@ -89,6 +89,8 @@ final class HomeScreenReady extends HomeScreenState {
   final String scheduleVisitPostalCode;
   final CountryOption scheduleVisitPhoneCountry;
   final String scheduleVisitPhoneNumber;
+  final bool isSubmittingScheduleVisit;
+  final bool scheduleVisitSuccessSignal;
 
   const HomeScreenReady({
     required this.startDate,
@@ -156,6 +158,8 @@ final class HomeScreenReady extends HomeScreenState {
     this.scheduleVisitPostalCode = '',
     this.scheduleVisitPhoneCountry = CountryOption.unitedStates,
     this.scheduleVisitPhoneNumber = '',
+    this.isSubmittingScheduleVisit = false,
+    this.scheduleVisitSuccessSignal = false,
   });
 
   HomeScreenReady copyWith({
@@ -238,6 +242,8 @@ final class HomeScreenReady extends HomeScreenState {
     String? scheduleVisitPostalCode,
     CountryOption? scheduleVisitPhoneCountry,
     String? scheduleVisitPhoneNumber,
+    bool? isSubmittingScheduleVisit,
+    bool? scheduleVisitSuccessSignal,
   }) {
     return HomeScreenReady(
       startDate: startDate ?? this.startDate,
@@ -353,6 +359,10 @@ final class HomeScreenReady extends HomeScreenState {
           scheduleVisitPhoneCountry ?? this.scheduleVisitPhoneCountry,
       scheduleVisitPhoneNumber:
           scheduleVisitPhoneNumber ?? this.scheduleVisitPhoneNumber,
+      isSubmittingScheduleVisit:
+          isSubmittingScheduleVisit ?? this.isSubmittingScheduleVisit,
+      scheduleVisitSuccessSignal:
+          scheduleVisitSuccessSignal ?? this.scheduleVisitSuccessSignal,
     );
   }
 }

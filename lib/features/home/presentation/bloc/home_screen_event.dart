@@ -247,12 +247,14 @@ final class HomeScreenScheduleVisitStreetAddressSelected
 
 final class HomeScreenScheduleVisitPhoneCountryChanged extends HomeScreenEvent {
   const HomeScreenScheduleVisitPhoneCountryChanged(this.country);
-
   final CountryOption country;
 }
 
 final class HomeScreenScheduleVisitPhoneNumberChanged extends HomeScreenEvent {
   const HomeScreenScheduleVisitPhoneNumberChanged(this.value);
-
   final String value;
+}
+
+final class HomeScreenScheduleVisitSubmitted extends HomeScreenEvent {
+  const HomeScreenScheduleVisitSubmitted();
 }

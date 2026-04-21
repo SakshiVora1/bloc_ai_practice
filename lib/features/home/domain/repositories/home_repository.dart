@@ -49,4 +49,11 @@ abstract interface class HomeRepository {
     int page = 1,
     int limit = 100,
   });
+
+  Future<Map<String, dynamic>> createVisit({required Map<String, dynamic> body});
+  Future<Map<String, dynamic>> updatePatient({
+    required int patientId,
+    required Map<String, dynamic> body,
+  });
+  Future<Map<String, dynamic>> createMobilePatient({required Map<String, dynamic> body});
 }

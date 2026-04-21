@@ -22,7 +22,7 @@ import 'package:subqdocs_bloc/features/patients/data/patient_list_row.dart';
 import 'package:subqdocs_bloc/features/patients/presentation/widgets/patient_avatar_palette.dart';
 import 'package:subqdocs_bloc/widgets/common_button.dart';
 import 'package:subqdocs_bloc/widgets/common_text_form_field.dart';
-import 'package:subqdocs_bloc/core/services/app_toast.dart';
+import 'package:subqdocs_bloc/core/models/organization_singleton.dart';
 
 class HomeScheduleVisitPanel extends StatefulWidget {
   const HomeScheduleVisitPanel({super.key});
@@ -72,6 +72,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
   final GlobalKey _visitTypeKey = GlobalKey();
   final GlobalKey _paymentMethodKey = GlobalKey();
   final GlobalKey _reasonKey = GlobalKey();
+  final GlobalKey _dateOfBirthKey = GlobalKey();
 
   final Map<String, String> _errors = {};
 
@@ -141,7 +142,16 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HomeScreenBloc, HomeScreenState>(
+    return BlocListener<HomeScreenBloc, HomeScreenState>(
+      listenWhen: (previous, current) =>
+          current is HomeScreenReady &&
+          (current.scheduleVisitSuccessSignal == true),
+      listener: (context, state) {
+        if (state is HomeScreenReady && state.scheduleVisitSuccessSignal) {
+          Scaffold.of(context).closeEndDrawer();
+        }
+      },
+      child: BlocBuilder<HomeScreenBloc, HomeScreenState>(
       builder: (BuildContext context, HomeScreenState state) {
         if (state is! HomeScreenReady) {
           return const SizedBox.shrink();
@@ -281,6 +291,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                               );
                             },
                       ),
+                      _ErrorText(_errors['patient']),
                     ],
                     if (state.scheduleVisitIsAddingPatient ||
                         state.scheduleVisitSelectedPatient != null) ...<Widget>[
@@ -306,7 +317,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                           );
                         },
                       ),
-                      _ErrorText(_errors['lastName']),
+                      _ErrorText(_errors['firstName']),
                       const SizedBox(height: 16),
                       Container(
                         key: _lastNameKey,
@@ -322,9 +333,15 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                           // context.read<HomeScreenBloc>().add(HomeScreenScheduleVisitLastNameChanged(value));
                         },
                       ),
+                      _ErrorText(_errors['lastName']),
                       const SizedBox(height: 16),
-                      _FieldLabel(
-                        text: AppStrings.scheduleVisitDateOfBirthLabel,
+                      Container(
+                        key: _dateOfBirthKey,
+                        child: _FieldLabel(
+                          text: AppStrings.scheduleVisitDateOfBirthLabel,
+                          isRequired: OrganizationSingleton().organization?.hasOptumIntegration == true ||
+                              OrganizationSingleton().organization?.isEmaLiteEnabled == true,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       _DatePickerButton(
@@ -339,6 +356,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         initialDate: state.dateOfBirth ?? todayDateOnly,
                         placeholder: AppStrings.scheduleVisitDateHint,
                       ),
+                      _ErrorText(_errors['dateOfBirth']),
                       const SizedBox(height: 16),
                       _FieldLabel(
                         text: AppStrings.scheduleVisitGenderAtBirthLabel,
@@ -596,11 +614,12 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         );
                       },
                     ),
+                    _ErrorText(_errors['officeLocation']),
                     const SizedBox(height: 10),
 
                     Container(
                       key: _providerKey,
-                      child: _FieldLabel(text: AppStrings.providerLabel),
+                      child: _RequiredLabel(text: AppStrings.providerLabel),
                     ),
                     const SizedBox(height: 5),
                     CommonTypeAheadDropdown<StaffModel>(
@@ -641,6 +660,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         );
                       },
                     ),
+                    _ErrorText(_errors['provider']),
                     const SizedBox(height: 10),
 
                     Container(
@@ -661,6 +681,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         );
                       },
                     ),
+                    _ErrorText(_errors['visitDate']),
                     const SizedBox(height: 10),
 
                     Container(
@@ -723,6 +744,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         );
                       },
                     ),
+                    _ErrorText(_errors['visitType']),
                     const SizedBox(height: 10),
 
                     _FieldLabel(
@@ -832,12 +854,13 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         textColor: AppColors.white,
                         borderColor: AppColors.scheduleVisitAccent,
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        elevation: 0,
-                        onPressed: () {
-                          FocusScope.of(context).unfocus();
-                          _validateAndSubmit(state);
-                        },
+                        onPressed: state.isSubmittingScheduleVisit
+                            ? null
+                            : () {
+                                FocusScope.of(context).unfocus();
+                                _validateAndSubmit(state);
+                              },
+                        isLoading: state.isSubmittingScheduleVisit,
                       ),
                     ),
                   ],
@@ -847,6 +870,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
           ),
         );
       },
+      ),
     );
   }
 
@@ -913,13 +937,22 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
       firstErrorKey ??= _reasonKey;
     }
 
+    if (state.scheduleVisitIsAddingPatient) {
+      final org = OrganizationSingleton().organization;
+      bool dobRequired = org?.hasOptumIntegration == true || org?.isEmaLiteEnabled == true;
+      if (dobRequired && state.dateOfBirth == null) {
+        _errors['dateOfBirth'] = 'Date of birth is required';
+        firstErrorKey ??= _dateOfBirthKey;
+      }
+    }
+
     if (_errors.isNotEmpty) {
       setState(() {});
       if (firstErrorKey != null) {
         _scrollToError(firstErrorKey);
       }
     } else {
-      // TODO: Perform the actual submit logic via BLoC event
+      context.read<HomeScreenBloc>().add(const HomeScreenScheduleVisitSubmitted());
     }
   }
 
@@ -1570,12 +1603,23 @@ class _PurpleHeader extends StatelessWidget {
 }
 
 class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.text});
+  const _FieldLabel({required this.text, this.isRequired = false});
 
   final String text;
+  final bool isRequired;
 
   @override
   Widget build(BuildContext context) {
+    if (isRequired) {
+      return RichText(
+        text: TextSpan(
+          children: <InlineSpan>[
+            TextSpan(text: text, style: AppFonts.regular(14, AppColors.black)),
+            TextSpan(text: ' *', style: AppFonts.regular(14, AppColors.red)),
+          ],
+        ),
+      );
+    }
     return Text(text, style: AppFonts.regular(14, AppColors.black));
   }
 }

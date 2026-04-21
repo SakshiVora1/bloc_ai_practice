@@ -4,6 +4,8 @@ import 'package:meta/meta.dart';
 final class PatientListRow {
   const PatientListRow({
     required this.id,
+    required this.firstName,
+    required this.lastName,
     required this.fullName,
     required this.profileImageUrl,
     required this.initials,
@@ -12,12 +14,21 @@ final class PatientListRow {
     required this.lastVisitDate,
     required this.previousVisitCount,
     this.officeLocationId,
+    this.email,
+    this.contactNo,
+    this.dateOfBirth,
+    this.address,
+    this.city,
+    this.state,
+    this.postalCode,
   });
 
   /// Placeholder row for [Skeletonizer] loading layout.
   factory PatientListRow.skeleton() {
     return const PatientListRow(
       id: -1,
+      firstName: '',
+      lastName: '',
       fullName: 'Patient name placeholder',
       profileImageUrl: null,
       initials: 'P',
@@ -29,6 +40,8 @@ final class PatientListRow {
   }
 
   final int id;
+  final String firstName;
+  final String lastName;
   final String fullName;
   final String? profileImageUrl;
   final String initials;
@@ -37,6 +50,13 @@ final class PatientListRow {
   final String? lastVisitDate;
   final int previousVisitCount;
   final int? officeLocationId;
+  final String? email;
+  final String? contactNo;
+  final String? dateOfBirth;
+  final String? address;
+  final String? city;
+  final String? state;
+  final String? postalCode;
 
   factory PatientListRow.fromApiJson(Map<String, dynamic> json) {
     final String first = (json['first_name'] as String?)?.trim() ?? '';
@@ -79,6 +99,8 @@ final class PatientListRow {
 
     return PatientListRow(
       id: id,
+      firstName: first,
+      lastName: last,
       fullName: displayName,
       profileImageUrl:
           (json['profile_image'] as String?)?.trim().isEmpty ?? true
@@ -92,6 +114,13 @@ final class PatientListRow {
           : (json['lastVisitDate'] as String?)?.trim(),
       previousVisitCount: previousVisitCount,
       officeLocationId: officeLocationId,
+      email: (json['email'] as String?)?.trim(),
+      contactNo: (json['contact_no'] as String?)?.trim(),
+      dateOfBirth: (json['dob'] as String?)?.trim(),
+      address: (json['street_address'] as String?)?.trim(),
+      city: (json['city'] as String?)?.trim(),
+      state: (json['state'] as String?)?.trim(),
+      postalCode: (json['zipcode'] as String?)?.trim(),
     );
   }
 

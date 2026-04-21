@@ -134,6 +134,28 @@ class _MockHomeRepository implements HomeRepository {
       totalPage: 1,
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> createVisit({required Map<String, dynamic> body}) async {
+    return {'response_type': 'success', 'message': 'Visit scheduled successfully'};
+  }
+
+  @override
+  Future<Map<String, dynamic>> updatePatient({
+    required int patientId,
+    required Map<String, dynamic> body,
+  }) async {
+    return {'response_type': 'success', 'message': 'Patient updated successfully'};
+  }
+
+  @override
+  Future<Map<String, dynamic>> createMobilePatient({required Map<String, dynamic> body}) async {
+    return {
+      'response_type': 'success',
+      'message': 'Patient created',
+      'response_data': {'id': 123}
+    };
+  }
 }
 
 void main() {
