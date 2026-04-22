@@ -59,4 +59,6 @@ abstract final class AppColors {
   static const Color visitStatusScheduled = Color(0xFF6366F1);
   static const Color visitStatusPaused = Color(0xFFF59E0B);
   static const Color visitStatusCompleted = Color(0xFF10B981);
+  static const Color attachmentHeaderBackground = Color(0xFFF0F1FF);
+  static const Color addPatientBackground = Color(0xFFF6F6FD);
 }

@@ -18,6 +18,9 @@ import 'package:subqdocs_bloc/features/settings/presentation/view/settings_view.
 import 'package:subqdocs_bloc/features/splash/presentation/bloc/splash_screen_bloc.dart';
 import 'package:subqdocs_bloc/features/splash/presentation/view/splash_screen_view.dart';
 
+import 'package:subqdocs_bloc/features/patients/presentation/bloc/add_patient_bloc.dart';
+import 'package:subqdocs_bloc/features/patients/presentation/view/add_patient_screen.dart';
+
 abstract final class AppRoutes {
   AppRoutes._();
 
@@ -48,5 +51,12 @@ abstract final class AppRoutes {
       final int patientId = args is MedicalRecordRouteArgs ? args.patientId : 0;
       return MedicalRecordView(patientId: patientId);
     },
+    RouteNames.addPatient: (BuildContext context) => BlocProvider(
+      create: (_) => AddPatientBloc(
+        patientsRepository: PatientsRepositoryImpl(),
+        homeRepository: HomeRepositoryImpl(),
+      ),
+      child: const AddPatientScreen(),
+    ),
   };
 }

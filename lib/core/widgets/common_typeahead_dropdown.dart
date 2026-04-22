@@ -60,11 +60,13 @@ class CommonTypeAheadDropdown<T> extends StatelessWidget {
             suggestionsController?.close(retainFocus: false);
             focusNode?.unfocus();
             onSelected(value);
+            // Reset selection and scroll to start for long text visibility
+            controller.selection = const TextSelection.collapsed(offset: 0);
           },
           hideOnEmpty: false,
           hideOnError: false,
           hideOnLoading: false,
-          constraints: const BoxConstraints(maxHeight: 320),
+          constraints: const BoxConstraints(maxHeight: 250),
           scrollController: scrollController,
           builder:
               (

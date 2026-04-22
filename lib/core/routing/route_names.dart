@@ -6,5 +6,6 @@ abstract final class RouteNames {
   static const String home = '/home';
   static const String patients = '/patients';
   static const String settings = '/settings';
-  static const String medicalRecord = '/medicalRecord';
+  static const String medicalRecord = '/medical-record';
+  static const String addPatient = '/add-patient';
 }

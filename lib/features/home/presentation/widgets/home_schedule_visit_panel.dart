@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-
 import 'package:cupertino_calendar_picker/cupertino_calendar_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:subqdocs_bloc/core/constants/app_colors.dart';
 import 'package:subqdocs_bloc/core/constants/app_fonts.dart';
 import 'package:subqdocs_bloc/core/constants/app_strings.dart';
@@ -140,6 +140,13 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
     super.dispose();
   }
 
+  void _closeAllSuggestions() {
+    _patientSuggestionsController.close(retainFocus: false);
+    _countrySuggestionsController.close(retainFocus: false);
+    _streetAddressSuggestionsController.close(retainFocus: false);
+    _showPhoneCountryDropdown.value = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<HomeScreenBloc, HomeScreenState>(
@@ -201,11 +208,17 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
         _syncController(_phoneNumberController, state.scheduleVisitPhoneNumber);
 
         return GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
+          onTap: () {
+            FocusScope.of(context).unfocus();
+            _closeAllSuggestions();
+          },
           child: Column(
             children: <Widget>[
               _ScheduleVisitHeader(
-                onClose: () => Scaffold.of(context).closeEndDrawer(),
+                onClose: () {
+                  _closeAllSuggestions();
+                  Scaffold.of(context).closeEndDrawer();
+                },
               ),
               Expanded(
                 child: ListView(
@@ -223,73 +236,83 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      CommonTypeAheadDropdown<PatientListRow>(
-                        controller: _searchController,
-                        focusNode: _patientSearchFocusNode,
-                        scrollController: _patientSuggestionsScrollController,
-                        suggestionsController: _patientSuggestionsController,
-                        hintText: AppStrings.scheduleVisitPatientSearchHint,
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          size: 20,
-                          color: AppColors.blueGray,
-                        ),
-                        onChanged: (String value) {
-                          context.read<HomeScreenBloc>().add(
-                            HomeScreenScheduleVisitPatientSearchChanged(value),
-                          );
+                      VisibilityDetector(
+                        key: const Key('patient_search_dropdown'),
+                        onVisibilityChanged: (info) {
+                          if (info.visibleFraction == 0) {
+                            _patientSuggestionsController.close(
+                              retainFocus: false,
+                            );
+                          }
                         },
-                        onClear: () {
-                          _patientSuggestionsController.close(
-                            retainFocus: false,
-                          );
-                          _patientSearchFocusNode.unfocus();
-                          context.read<HomeScreenBloc>().add(
-                            const HomeScreenScheduleVisitPatientSearchChanged(
-                              '',
-                            ),
-                          );
-                        },
-                        suggestionsCallback: (String pattern) async {
-                          final Completer<List<PatientListRow>> completer =
-                              Completer<List<PatientListRow>>();
-                          context.read<HomeScreenBloc>().add(
-                            HomeScreenScheduleVisitPatientSuggestionsRequested(
-                              query: pattern,
-                              completer: completer,
-                            ),
-                          );
-                          return completer.future;
-                        },
-                        onSelected: (PatientListRow patient) {
-                          _patientSuggestionsController.close(
-                            retainFocus: false,
-                          );
-                          _patientSearchFocusNode.unfocus();
-                          context.read<HomeScreenBloc>().add(
-                            HomeScreenScheduleVisitPatientSelected(patient),
-                          );
-                        },
-                        header: _AddPatientTile(
-                          onTap: () {
+                        child: CommonTypeAheadDropdown<PatientListRow>(
+                          controller: _searchController,
+                          focusNode: _patientSearchFocusNode,
+                          scrollController: _patientSuggestionsScrollController,
+                          suggestionsController: _patientSuggestionsController,
+                          hintText: AppStrings.scheduleVisitPatientSearchHint,
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            size: 20,
+                            color: AppColors.blueGray,
+                          ),
+                          onChanged: (String value) {
+                            context.read<HomeScreenBloc>().add(
+                              HomeScreenScheduleVisitPatientSearchChanged(value),
+                            );
+                          },
+                          onClear: () {
                             _patientSuggestionsController.close(
                               retainFocus: false,
                             );
                             _patientSearchFocusNode.unfocus();
                             context.read<HomeScreenBloc>().add(
-                              const HomeScreenScheduleVisitAddPatientSelected(),
+                              const HomeScreenScheduleVisitPatientSearchChanged(
+                                '',
+                              ),
                             );
                           },
-                        ),
-                        emptyBuilder: (BuildContext context) =>
-                            const SizedBox.shrink(),
-                        itemBuilder:
-                            (BuildContext context, PatientListRow patient) {
-                              return _PatientDropdownRow(
-                                patient: patient,
-                                showDivider: true,
+                          suggestionsCallback: (String pattern) async {
+                            final Completer<List<PatientListRow>> completer =
+                                Completer<List<PatientListRow>>();
+                            context.read<HomeScreenBloc>().add(
+                              HomeScreenScheduleVisitPatientSuggestionsRequested(
+                                query: pattern,
+                                completer: completer,
+                              ),
+                            );
+                            return completer.future;
+                          },
+                          onSelected: (PatientListRow patient) {
+                            _patientSuggestionsController.close(
+                              retainFocus: false,
+                            );
+                            _patientSearchFocusNode.unfocus();
+                            context.read<HomeScreenBloc>().add(
+                              HomeScreenScheduleVisitPatientSelected(patient),
+                            );
+                          },
+                          header: _AddPatientTile(
+                            onTap: () {
+                              _patientSuggestionsController.close(
+                                retainFocus: false,
+                              );
+                              _patientSearchFocusNode.unfocus();
+                              context.read<HomeScreenBloc>().add(
+                                const HomeScreenScheduleVisitAddPatientSelected(),
                               );
                             },
+                          ),
+                          emptyBuilder: (BuildContext context) =>
+                              const SizedBox.shrink(),
+                          itemBuilder:
+                              (BuildContext context, PatientListRow patient) {
+                                return _PatientDropdownRow(
+                                  patient: patient,
+                                  showDivider: true,
+                                );
+                              },
+                        ),
                       ),
                       _ErrorText(_errors['patient']),
                     ],
@@ -401,7 +424,6 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                             HomeScreenScheduleVisitPhoneCountryChanged(country),
                           );
                         },
-                        countrySuggestions: _countrySuggestions,
                       ),
                       _ErrorText(_errors['phoneNumber']),
                       const SizedBox(height: 16),
@@ -415,118 +437,147 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                       const SizedBox(height: 16),
                       _FieldLabel(text: AppStrings.scheduleVisitCountryLabel),
                       const SizedBox(height: 8),
-                      CommonTypeAheadDropdown<CountryOption>(
-                        controller: _countryController,
-                        focusNode: _countryFocusNode,
-                        suggestionsController: _countrySuggestionsController,
-                        scrollController: _countrySuggestionsScrollController,
-                        hintText: AppStrings.scheduleVisitCountryHint,
-                        suffixIcon: const Icon(
-                          CupertinoIcons.chevron_down,
-                          size: 18,
-                          color: AppColors.blueGray,
-                        ),
-                        suggestionsCallback: (String pattern) {
-                          final String normalized = pattern.trim();
-                          if (normalized.isEmpty ||
-                              normalized ==
-                                  state.scheduleVisitCountry.displayLabel ||
-                              normalized == state.scheduleVisitCountry.name ||
-                              normalized.toLowerCase() ==
-                                  state.scheduleVisitCountry.isoCode
-                                      .toLowerCase()) {
-                            return _countrySuggestions('');
+                      VisibilityDetector(
+                        key: const Key('country_dropdown'),
+                        onVisibilityChanged: (info) {
+                          if (info.visibleFraction == 0) {
+                            _countrySuggestionsController.close(
+                              retainFocus: false,
+                            );
                           }
-                          return _countrySuggestions(pattern);
                         },
-                        itemBuilder:
-                            (BuildContext context, CountryOption country) {
-                              return _CountryDropdownRow(
-                                country: country,
-                                isSelected:
-                                    country.isoCode ==
-                                    state.scheduleVisitCountry.isoCode,
-                                showDivider:
-                                    _countryController.text.trim().isEmpty &&
-                                    country.isoCode ==
-                                        CountryOption.zimbabwe.isoCode,
-                              );
-                            },
-                        onSelected: (CountryOption country) {
-                          _countrySuggestionsController.close(
-                            retainFocus: false,
-                          );
-                          _countryFocusNode.unfocus();
-                          context.read<HomeScreenBloc>().add(
-                            HomeScreenScheduleVisitCountryChanged(country),
-                          );
-                        },
+                        child: CommonTypeAheadDropdown<CountryOption>(
+                          controller: _countryController,
+                          focusNode: _countryFocusNode,
+                          suggestionsController: _countrySuggestionsController,
+                          scrollController: _countrySuggestionsScrollController,
+                          hintText: AppStrings.scheduleVisitCountryHint,
+                          suffixIcon: const Icon(
+                            CupertinoIcons.chevron_down,
+                            size: 18,
+                            color: AppColors.blueGray,
+                          ),
+                          suggestionsCallback: (String pattern) {
+                            final String normalized = pattern.trim();
+                            if (normalized.isEmpty ||
+                                normalized ==
+                                    state.scheduleVisitCountry.displayLabel ||
+                                normalized == state.scheduleVisitCountry.name ||
+                                normalized.toLowerCase() ==
+                                    state.scheduleVisitCountry.isoCode
+                                        .toLowerCase()) {
+                              return _countrySuggestions('');
+                            }
+                            return _countrySuggestions(pattern);
+                          },
+                          itemBuilder:
+                              (BuildContext context, CountryOption country) {
+                                return _CountryDropdownRow(
+                                  country: country,
+                                  isSelected:
+                                      country.isoCode ==
+                                      state.scheduleVisitCountry.isoCode,
+                                  showDivider:
+                                      _countryController.text.trim().isEmpty &&
+                                      country.isoCode ==
+                                          CountryOption.zimbabwe.isoCode,
+                                  onTap: () {
+                                    _countrySuggestionsController.close(
+                                      retainFocus: false,
+                                    );
+                                    _countryFocusNode.unfocus();
+                                    context.read<HomeScreenBloc>().add(
+                                      HomeScreenScheduleVisitCountryChanged(country),
+                                    );
+                                  },
+                                );
+                              },
+                          onSelected: (CountryOption country) {
+                            _countrySuggestionsController.close(
+                              retainFocus: false,
+                            );
+                            _countryFocusNode.unfocus();
+                            context.read<HomeScreenBloc>().add(
+                              HomeScreenScheduleVisitCountryChanged(country),
+                            );
+                          },
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _FieldLabel(
                         text: AppStrings.scheduleVisitStreetAddressLabel,
                       ),
                       const SizedBox(height: 8),
-                      CommonTypeAheadDropdown<ScheduleVisitAddressSuggestion>(
-                        controller: _streetAddressController,
-                        focusNode: _streetAddressFocusNode,
-                        suggestionsController:
-                            _streetAddressSuggestionsController,
-                        scrollController:
-                            _streetAddressSuggestionsScrollController,
-                        hintText: AppStrings.scheduleVisitStateAddressHint,
-                        onChanged: (String value) {
-                          context.read<HomeScreenBloc>().add(
-                            HomeScreenScheduleVisitStreetAddressChanged(value),
-                          );
+                      VisibilityDetector(
+                        key: const Key('street_address_dropdown'),
+                        onVisibilityChanged: (info) {
+                          if (info.visibleFraction == 0) {
+                            _streetAddressSuggestionsController.close(
+                              retainFocus: false,
+                            );
+                          }
                         },
-                        onClear: () {
-                          _streetAddressSuggestionsController.close(
-                            retainFocus: false,
-                          );
-                          _streetAddressFocusNode.unfocus();
-                          context.read<HomeScreenBloc>().add(
-                            const HomeScreenScheduleVisitStreetAddressChanged(
-                              '',
-                            ),
-                          );
-                        },
-                        suggestionsCallback: (String pattern) async {
-                          final Completer<List<ScheduleVisitAddressSuggestion>>
-                          completer =
-                              Completer<List<ScheduleVisitAddressSuggestion>>();
-                          context.read<HomeScreenBloc>().add(
-                            HomeScreenScheduleVisitStreetAddressSuggestionsRequested(
-                              query: pattern,
-                              country: state.scheduleVisitCountry,
-                              completer: completer,
-                            ),
-                          );
-                          return completer.future;
-                        },
-                        emptyBuilder: (BuildContext context) =>
-                            const SizedBox.shrink(),
-                        itemBuilder:
-                            (
-                              BuildContext context,
-                              ScheduleVisitAddressSuggestion suggestion,
-                            ) {
-                              return _StreetAddressDropdownRow(
-                                suggestion: suggestion,
-                              );
-                            },
-                        onSelected:
-                            (ScheduleVisitAddressSuggestion suggestion) {
-                              _streetAddressSuggestionsController.close(
-                                retainFocus: false,
-                              );
-                              _streetAddressFocusNode.unfocus();
-                              context.read<HomeScreenBloc>().add(
-                                HomeScreenScheduleVisitStreetAddressSelected(
-                                  suggestion,
-                                ),
-                              );
-                            },
+                        child: CommonTypeAheadDropdown<ScheduleVisitAddressSuggestion>(
+                          controller: _streetAddressController,
+                          focusNode: _streetAddressFocusNode,
+                          suggestionsController:
+                              _streetAddressSuggestionsController,
+                          scrollController:
+                              _streetAddressSuggestionsScrollController,
+                          hintText: AppStrings.scheduleVisitStateAddressHint,
+                          onChanged: (String value) {
+                            context.read<HomeScreenBloc>().add(
+                              HomeScreenScheduleVisitStreetAddressChanged(value),
+                            );
+                          },
+                          onClear: () {
+                            _streetAddressSuggestionsController.close(
+                              retainFocus: false,
+                            );
+                            _streetAddressFocusNode.unfocus();
+                            context.read<HomeScreenBloc>().add(
+                              const HomeScreenScheduleVisitStreetAddressChanged(
+                                '',
+                              ),
+                            );
+                          },
+                          suggestionsCallback: (String pattern) async {
+                            final Completer<List<ScheduleVisitAddressSuggestion>>
+                            completer =
+                                Completer<List<ScheduleVisitAddressSuggestion>>();
+                            context.read<HomeScreenBloc>().add(
+                              HomeScreenScheduleVisitStreetAddressSuggestionsRequested(
+                                query: pattern,
+                                country: state.scheduleVisitCountry,
+                                completer: completer,
+                              ),
+                            );
+                            return completer.future;
+                          },
+                          emptyBuilder: (BuildContext context) =>
+                              const SizedBox.shrink(),
+                          itemBuilder:
+                              (
+                                BuildContext context,
+                                ScheduleVisitAddressSuggestion suggestion,
+                              ) {
+                                return _StreetAddressDropdownRow(
+                                  suggestion: suggestion,
+                                );
+                              },
+                          onSelected:
+                              (ScheduleVisitAddressSuggestion suggestion) {
+                                _streetAddressSuggestionsController.close(
+                                  retainFocus: false,
+                                );
+                                _streetAddressFocusNode.unfocus();
+                                context.read<HomeScreenBloc>().add(
+                                  HomeScreenScheduleVisitStreetAddressSelected(
+                                    suggestion,
+                                  ),
+                                );
+                              },
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _FieldLabel(text: AppStrings.scheduleVisitCityLabel),
@@ -841,6 +892,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                         elevation: 0,
                         onPressed: () {
                           FocusScope.of(context).unfocus();
+                          _closeAllSuggestions();
                           Scaffold.of(context).closeEndDrawer();
                         },
                       ),
@@ -858,6 +910,7 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
                             ? null
                             : () {
                                 FocusScope.of(context).unfocus();
+                                _closeAllSuggestions();
                                 _validateAndSubmit(state);
                               },
                         isLoading: state.isSubmittingScheduleVisit,
@@ -977,57 +1030,57 @@ class _HomeScheduleVisitPanelState extends State<HomeScheduleVisitPanel> {
       );
     }
   }
+}
 
-  void _syncController(TextEditingController controller, String value) {
-    if (controller.text == value) {
-      return;
+void _syncController(TextEditingController controller, String value) {
+  if (controller.text == value) {
+    return;
+  }
+  controller.value = controller.value.copyWith(
+    text: value,
+    selection: const TextSelection.collapsed(offset: 0),
+    composing: TextRange.empty,
+  );
+}
+
+List<CountryOption> _countrySuggestions(String pattern) {
+  final String normalized = pattern.trim().toLowerCase();
+  final Iterable<CountryOption> filtered = CountryOption.all.where((
+    CountryOption country,
+  ) {
+    if (normalized.isEmpty) {
+      return true;
     }
-    controller.value = controller.value.copyWith(
-      text: value,
-      selection: TextSelection.collapsed(offset: value.length),
-      composing: TextRange.empty,
-    );
-  }
+    return country.name.toLowerCase().contains(normalized) ||
+        country.isoCode.toLowerCase().contains(normalized) ||
+        country.dialCode.toLowerCase().contains(normalized);
+  });
 
-  List<CountryOption> _countrySuggestions(String pattern) {
-    final String normalized = pattern.trim().toLowerCase();
-    final Iterable<CountryOption> filtered = CountryOption.all.where((
-      CountryOption country,
-    ) {
-      if (normalized.isEmpty) {
-        return true;
-      }
-      return country.name.toLowerCase().contains(normalized) ||
-          country.isoCode.toLowerCase().contains(normalized) ||
-          country.dialCode.toLowerCase().contains(normalized);
-    });
+  final List<CountryOption> favorites = <CountryOption>[
+    CountryOption.unitedStates,
+    CountryOption.zimbabwe,
+  ];
 
-    final List<CountryOption> favorites = <CountryOption>[
-      CountryOption.unitedStates,
-      CountryOption.zimbabwe,
-    ];
+  final List<CountryOption> favoriteMatches = favorites
+      .where(
+        (CountryOption country) => filtered.any(
+          (CountryOption option) => option.isoCode == country.isoCode,
+        ),
+      )
+      .toList();
+  final List<CountryOption> others =
+      filtered
+          .where(
+            (CountryOption country) => !favorites.any(
+              (CountryOption favorite) => favorite.isoCode == country.isoCode,
+            ),
+          )
+          .toList()
+        ..sort(
+          (CountryOption a, CountryOption b) => a.name.compareTo(b.name),
+        );
 
-    final List<CountryOption> favoriteMatches = favorites
-        .where(
-          (CountryOption country) => filtered.any(
-            (CountryOption option) => option.isoCode == country.isoCode,
-          ),
-        )
-        .toList();
-    final List<CountryOption> others =
-        filtered
-            .where(
-              (CountryOption country) => !favorites.any(
-                (CountryOption favorite) => favorite.isoCode == country.isoCode,
-              ),
-            )
-            .toList()
-          ..sort(
-            (CountryOption a, CountryOption b) => a.name.compareTo(b.name),
-          );
-
-    return <CountryOption>[...favoriteMatches, ...others];
-  }
+  return <CountryOption>[...favoriteMatches, ...others];
 }
 
 class _ScheduleVisitHeader extends StatelessWidget {
@@ -1184,49 +1237,6 @@ class _AddPatientTile extends StatelessWidget {
   }
 }
 
-class _CountryDropdownRow extends StatelessWidget {
-  const _CountryDropdownRow({
-    required this.country,
-    required this.showDivider,
-    required this.isSelected,
-  });
-
-  final CountryOption country;
-  final bool showDivider;
-  final bool isSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Container(
-          color: isSelected ? const Color(0xFFF4F2FF) : AppColors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: <Widget>[
-              Text(country.flagEmoji, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  country.name,
-                  style: AppFonts.regular(14, AppColors.primaryText),
-                ),
-              ),
-              if (isSelected)
-                const Icon(
-                  Icons.check,
-                  size: 18,
-                  color: AppColors.scheduleVisitAccent,
-                ),
-            ],
-          ),
-        ),
-        if (showDivider)
-          const Divider(height: 1, thickness: 1, color: AppColors.fieldBorder),
-      ],
-    );
-  }
-}
 
 class _StreetAddressDropdownRow extends StatelessWidget {
   const _StreetAddressDropdownRow({required this.suggestion});
@@ -1278,15 +1288,15 @@ class _StreetAddressDropdownRow extends StatelessWidget {
   }
 }
 
-class _PhoneNumberField extends StatelessWidget {
+class _PhoneNumberField extends StatefulWidget {
   const _PhoneNumberField({
+    super.key,
     required this.selectedCountry,
     required this.phoneNumberController,
     required this.countrySearchController,
     required this.showDropdownListenable,
     required this.onPhoneNumberChanged,
     required this.onCountrySelected,
-    required this.countrySuggestions,
   });
 
   final CountryOption selectedCountry;
@@ -1295,243 +1305,239 @@ class _PhoneNumberField extends StatelessWidget {
   final ValueNotifier<bool> showDropdownListenable;
   final ValueChanged<String> onPhoneNumberChanged;
   final ValueChanged<CountryOption> onCountrySelected;
-  final List<CountryOption> Function(String pattern) countrySuggestions;
+
+  @override
+  State<_PhoneNumberField> createState() => _PhoneNumberFieldState();
+}
+
+class _PhoneNumberFieldState extends State<_PhoneNumberField> {
+  final LayerLink _link = LayerLink();
+  OverlayEntry? _overlayEntry;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.showDropdownListenable.addListener(_handleExternalToggle);
+  }
+
+  @override
+  void dispose() {
+    widget.showDropdownListenable.removeListener(_handleExternalToggle);
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  void _handleExternalToggle() {
+    if (widget.showDropdownListenable.value) {
+      if (_overlayEntry == null) {
+        _showOverlay();
+      }
+    } else {
+      if (_overlayEntry != null) {
+        _hideOverlay();
+      }
+    }
+  }
+
+  void _toggleOverlay() {
+    widget.showDropdownListenable.value = !widget.showDropdownListenable.value;
+  }
+
+  void _showOverlay() {
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    const double h = 320;
+    return OverlayEntry(
+      builder: (BuildContext context) => Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _toggleOverlay,
+              behavior: HitTestBehavior.opaque,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          _buildSmartOverlay(
+            context: this.context,
+            link: _link,
+            overlayHeight: h,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.fieldBorder),
+              ),
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: widget.countrySearchController,
+                builder: (
+                  BuildContext context,
+                  TextEditingValue searchValue,
+                  Widget? child,
+                ) {
+                  final List<CountryOption> filteredCountries =
+                      _countrySuggestions(searchValue.text);
+                  final bool showFavoritesDivider =
+                      searchValue.text.trim().isEmpty;
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: TextField(
+                          controller: widget.countrySearchController,
+                          onChanged: (_) {},
+                          style: AppFonts.regular(
+                            14,
+                            AppColors.primaryText,
+                          ),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.white,
+                            hintText: AppStrings.scheduleVisitCountrySearchHint,
+                            hintStyle: AppFonts.regular(
+                              14,
+                              AppColors.blueGray,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              size: 18,
+                              color: AppColors.blueGray,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: const BorderSide(
+                                color: AppColors.fieldBorder,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: const BorderSide(
+                                color: AppColors.fieldBorder,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: const BorderSide(
+                                color: AppColors.scheduleVisitAccent,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 260),
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: filteredCountries.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final CountryOption country =
+                                  filteredCountries[index];
+                              final bool showDivider = showFavoritesDivider &&
+                                  country.isoCode ==
+                                      CountryOption.zimbabwe.isoCode;
+
+                              return _CountryDropdownRow(
+                                country: country,
+                                isSelected: country.isoCode ==
+                                    widget.selectedCountry.isoCode,
+                                showDivider: showDivider,
+                                onTap: () {
+                                  widget.onCountrySelected(country);
+                                  _toggleOverlay();
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: showDropdownListenable,
-      builder: (BuildContext context, bool showDropdown, Widget? child) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.scheduleVisitAccent),
+      ),
+      child: CompositedTransformTarget(
+        link: _link,
+        child: Row(
           children: <Widget>[
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.scheduleVisitAccent),
-              ),
-              child: Row(
-                children: <Widget>[
-                  InkWell(
-                    onTap: () {
-                      showDropdownListenable.value = !showDropdown;
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 14,
-                      ),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          right: BorderSide(color: AppColors.fieldBorder),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            selectedCountry.flagEmoji,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            selectedCountry.dialCode,
-                            style: AppFonts.regular(14, AppColors.primaryText),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(
-                            CupertinoIcons.chevron_down,
-                            size: 14,
-                            color: AppColors.blueGray,
-                          ),
-                        ],
-                      ),
-                    ),
+            InkWell(
+              onTap: _toggleOverlay,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 14,
+                ),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    right: BorderSide(color: AppColors.fieldBorder),
                   ),
-                  Expanded(
-                    child: TextField(
-                      controller: phoneNumberController,
-                      onChanged: onPhoneNumberChanged,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      widget.selectedCountry.flagEmoji,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.selectedCountry.dialCode,
                       style: AppFonts.regular(14, AppColors.primaryText),
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: AppStrings.scheduleVisitPhoneNumberHint,
-                        hintStyle: AppFonts.regular(14, AppColors.blueGray),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 14,
-                        ),
-                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    const Icon(
+                      CupertinoIcons.chevron_down,
+                      size: 14,
+                      color: AppColors.blueGray,
+                    ),
+                  ],
+                ),
               ),
             ),
-            if (showDropdown) ...<Widget>[
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.fieldBorder),
-                ),
-                child: ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: countrySearchController,
-                  builder:
-                      (
-                        BuildContext context,
-                        TextEditingValue searchValue,
-                        Widget? child,
-                      ) {
-                        final List<CountryOption> filteredCountries =
-                            countrySuggestions(searchValue.text);
-                        final bool showFavoritesDivider = searchValue.text
-                            .trim()
-                            .isEmpty;
-
-                        return Column(
-                          children: <Widget>[
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: TextField(
-                                controller: countrySearchController,
-                                onChanged: (_) {
-                                  showDropdownListenable.value = true;
-                                },
-                                style: AppFonts.regular(
-                                  14,
-                                  AppColors.primaryText,
-                                ),
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: AppColors.white,
-                                  hintText:
-                                      AppStrings.scheduleVisitCountrySearchHint,
-                                  hintStyle: AppFonts.regular(
-                                    14,
-                                    AppColors.blueGray,
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.search,
-                                    size: 18,
-                                    color: AppColors.blueGray,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.fieldBorder,
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.fieldBorder,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.scheduleVisitAccent,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 260),
-                              child: ListView.builder(
-                                padding: EdgeInsets.zero,
-                                shrinkWrap: true,
-                                itemCount: filteredCountries.length,
-                                itemBuilder: (BuildContext context, int index) {
-                                  final CountryOption country =
-                                      filteredCountries[index];
-                                  final bool showDivider =
-                                      showFavoritesDivider &&
-                                      country.isoCode ==
-                                          CountryOption.zimbabwe.isoCode;
-
-                                  return Column(
-                                    children: <Widget>[
-                                      InkWell(
-                                        onTap: () => onCountrySelected(country),
-                                        child: Container(
-                                          color:
-                                              country.isoCode ==
-                                                  selectedCountry.isoCode
-                                              ? const Color(0xFFF4F2FF)
-                                              : AppColors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 12,
-                                          ),
-                                          child: Row(
-                                            children: <Widget>[
-                                              Text(
-                                                country.flagEmoji,
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              SizedBox(
-                                                width: 44,
-                                                child: Text(
-                                                  country.dialCode,
-                                                  style: AppFonts.regular(
-                                                    14,
-                                                    AppColors.primaryText,
-                                                  ),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: Text(
-                                                  country.name,
-                                                  style: AppFonts.regular(
-                                                    14,
-                                                    AppColors.primaryText,
-                                                  ),
-                                                ),
-                                              ),
-                                              if (country.isoCode ==
-                                                  selectedCountry.isoCode)
-                                                const Icon(
-                                                  Icons.check,
-                                                  size: 18,
-                                                  color: AppColors
-                                                      .scheduleVisitAccent,
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      const Divider(
-                                        height: 1,
-                                        thickness: 1,
-                                        color: AppColors.fieldBorder,
-                                      ),
-                                      if (showDivider)
-                                        const Divider(
-                                          height: 1,
-                                          thickness: 1,
-                                          color: AppColors.fieldBorder,
-                                        ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+            Expanded(
+              child: TextField(
+                controller: widget.phoneNumberController,
+                onChanged: widget.onPhoneNumberChanged,
+                style: AppFonts.regular(14, AppColors.primaryText),
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: AppStrings.scheduleVisitPhoneNumberHint,
+                  hintStyle: AppFonts.regular(14, AppColors.blueGray),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
                 ),
               ),
-            ],
+            ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -1567,6 +1573,86 @@ class _PatientDropdownRow extends StatelessWidget {
     );
   }
 }
+
+class _CountryDropdownRow extends StatelessWidget {
+  const _CountryDropdownRow({
+    required this.country,
+    required this.showDivider,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final CountryOption country;
+  final bool showDivider;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            color: isSelected ? const Color(0xFFF4F2FF) : AppColors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            child: Row(
+              children: <Widget>[
+                Text(
+                  country.flagEmoji,
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    country.dialCode,
+                    style: AppFonts.regular(
+                      14,
+                      AppColors.primaryText,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    country.name,
+                    style: AppFonts.regular(
+                      14,
+                      AppColors.primaryText,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Icon(
+                    Icons.check,
+                    size: 18,
+                    color: AppColors.scheduleVisitAccent,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const Divider(
+          height: 1,
+          thickness: 1,
+          color: AppColors.fieldBorder,
+        ),
+        if (showDivider)
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.fieldBorder,
+          ),
+      ],
+    );
+  }
+}
+
 
 class _PatientAvatar extends StatelessWidget {
   const _PatientAvatar({required this.patient});
@@ -2027,3 +2113,4 @@ class _SimpleDropdownState extends State<_SimpleDropdown> {
     );
   }
 }
+

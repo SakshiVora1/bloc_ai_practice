@@ -60,7 +60,7 @@ class _PatientsViewState extends State<PatientsView> {
   }
 
   void _onAddPatient() {
-    AppToast.showInfo(context, AppStrings.patientsAddPatientComingSoon);
+    AppRouter.pushAddPatient(context);
   }
 
   void _onPatientNameTap(int patientId) {

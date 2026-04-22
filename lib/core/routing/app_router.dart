@@ -66,4 +66,8 @@ abstract final class AppRouter {
       arguments: MedicalRecordRouteArgs(patientId: patientId),
     );
   }
+
+  static Future<void> pushAddPatient(BuildContext context) {
+    return Navigator.of(context).pushNamed(RouteNames.addPatient);
+  }
 }

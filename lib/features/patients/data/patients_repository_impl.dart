@@ -58,6 +58,38 @@ final class PatientsRepositoryImpl implements PatientsRepository {
     }
   }
 
+  @override
+  Future<String> getLatestPatientId() async {
+    final String? bearer = await _sessionBearerToken();
+    if (bearer == null || bearer.isEmpty) {
+      throw const UnauthorizedApiException(message: 'No active session');
+    }
+
+    final dynamic data = await _apiService.get(
+      'latest-patient-id',
+      bearerToken: bearer,
+    );
+
+    if (data is! Map) {
+      throw const ParseApiException(
+        message: 'Latest Patient ID API returned non-object response',
+      );
+    }
+
+    try {
+      final Map<String, dynamic> responseData =
+          Map<String, dynamic>.from(data['responseData'] ?? {});
+      final String? patientId = responseData['patientId']?.toString();
+      if (patientId == null || patientId.isEmpty) {
+        throw const ParseApiException(message: 'Patient ID missing in response');
+      }
+      return patientId;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw parseApiExceptionFrom(e);
+    }
+  }
+
   Future<String?> _sessionBearerToken() async {
     return _preferences.getString(AppPreferencesKeys.bearerToken);
   }

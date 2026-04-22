@@ -8,4 +8,6 @@ abstract interface class PatientsRepository {
     String search,
     List<Map<String, dynamic>> sorting,
   });
+  /// GET [patient/latest-patient-id].
+  Future<String> getLatestPatientId();
 }
